@@ -14,7 +14,13 @@ const state = {
   templateSheet: 0,        // index of currently-shown sheet in template tab
   showInnerMargins: true,  // dashed margin between adjacent pages on a sheet
   showSheetBorder: true,   // dashed margin around the outer edge of the sheet
+  innerMarginPx: 38,       // inset width for inner margins, in px @ 300 DPI (≈ 0.125")
+  sheetBorderPx: 75,       // inset width for outer sheet border, in px @ 300 DPI (≈ 0.25")
 };
+
+// Export-time DPI used to convert the px-at-300DPI state values into the
+// inches that the layout/draw code works in.
+const EXPORT_DPI = 300;
 
 const SIZES = {
   letter:  { w: 8.5, h: 11,  label: 'US Letter', short: '8.5 × 11 in' },

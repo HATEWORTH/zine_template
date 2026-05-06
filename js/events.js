@@ -12,6 +12,10 @@ const countToggleBtns = document.querySelectorAll('#count-toggle button');
 const sigSel = document.getElementById('sig-size');
 const marginBtns = document.querySelectorAll('#margins button');
 const borderBtns = document.querySelectorAll('#border button');
+const marginPxInput = document.getElementById('margin-px');
+const borderPxInput = document.getElementById('border-px');
+const marginPxValue = document.getElementById('margin-px-value');
+const borderPxValue = document.getElementById('border-px-value');
 const tabBtns = document.querySelectorAll('.tabs button');
 
 modeBtns.forEach(b => b.addEventListener('click', () => {
@@ -153,6 +157,18 @@ borderBtns.forEach(b => b.addEventListener('click', () => {
   state.showSheetBorder = b.dataset.val === 'on';
   render();
 }));
+
+marginPxInput.addEventListener('input', e => {
+  state.innerMarginPx = parseInt(e.target.value, 10);
+  marginPxValue.textContent = state.innerMarginPx;
+  render();
+});
+
+borderPxInput.addEventListener('input', e => {
+  state.sheetBorderPx = parseInt(e.target.value, 10);
+  borderPxValue.textContent = state.sheetBorderPx;
+  render();
+});
 
 tabBtns.forEach(b => b.addEventListener('click', () => {
   tabBtns.forEach(x => x.classList.remove('active'));

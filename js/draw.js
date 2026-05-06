@@ -4,12 +4,11 @@
 // `cell` coordinates are in paper inches; sx/sy scale them to canvas pixels.
 
 // Safe-area margin guides drawn inside each non-blank page cell.
-// TRIM applies to a cell edge that lies on the sheet boundary
-// (printer can't reach all the way to the edge).
-// FOLD applies to an inner edge shared with another cell
-// (visual breathing room from a crease).
-const SAFE_MARGIN_TRIM_IN = 0.25;
-const SAFE_MARGIN_FOLD_IN = 0.125;
+// The actual inset distances are user-configurable via state
+// (state.sheetBorderPx for outer cell edges that lie on the sheet
+// boundary, state.innerMarginPx for inner cell-to-cell edges).
+// Values are stored in pixels at 300 DPI so the export and preview
+// stay consistent regardless of canvas size.
 
 function sizeCanvasToFit(cv, paperW, paperH, maxW, maxH) {
   // Also clamp to viewport: never wider than viewport minus some margin.
@@ -91,10 +90,12 @@ function drawSheet(ctx, cw, ch, paperW, paperH, sheet, side) {
         const visB = isBottomOuter ? state.showSheetBorder : state.showInnerMargins;
 
         if (visL || visT || visR || visB) {
-          const mL = isLeftOuter   ? SAFE_MARGIN_TRIM_IN : SAFE_MARGIN_FOLD_IN;
-          const mT = isTopOuter    ? SAFE_MARGIN_TRIM_IN : SAFE_MARGIN_FOLD_IN;
-          const mR = isRightOuter  ? SAFE_MARGIN_TRIM_IN : SAFE_MARGIN_FOLD_IN;
-          const mB = isBottomOuter ? SAFE_MARGIN_TRIM_IN : SAFE_MARGIN_FOLD_IN;
+          const trimIn = state.sheetBorderPx / EXPORT_DPI;
+          const foldIn = state.innerMarginPx / EXPORT_DPI;
+          const mL = isLeftOuter   ? trimIn : foldIn;
+          const mT = isTopOuter    ? trimIn : foldIn;
+          const mR = isRightOuter  ? trimIn : foldIn;
+          const mB = isBottomOuter ? trimIn : foldIn;
 
           const xL = x + mL * sx;
           const xR = x + w - mR * sx;

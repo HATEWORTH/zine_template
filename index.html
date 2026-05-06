@@ -139,20 +139,28 @@
 
       <!-- PAGE MARGINS (between adjacent pages on a sheet) -->
       <div class="control-group">
-        <div class="control-label"><span>Page Margins</span></div>
+        <div class="control-label">
+          <span>Page Margins</span>
+          <span class="value"><span id="margin-px-value">38</span> px</span>
+        </div>
         <div class="seg cols-2" id="margins">
           <button data-val="on" class="active">On</button>
           <button data-val="off">Off</button>
         </div>
+        <input type="range" id="margin-px" class="px-slider" min="0" max="200" step="1" value="38" />
       </div>
 
       <!-- SHEET BORDER (around the outer edge of the sheet) -->
       <div class="control-group">
-        <div class="control-label"><span>Sheet Border</span></div>
+        <div class="control-label">
+          <span>Sheet Border</span>
+          <span class="value"><span id="border-px-value">75</span> px</span>
+        </div>
         <div class="seg cols-2" id="border">
           <button data-val="on" class="active">On</button>
           <button data-val="off">Off</button>
         </div>
+        <input type="range" id="border-px" class="px-slider" min="0" max="300" step="1" value="75" />
       </div>
 
       <div class="export-zone">

@@ -242,6 +242,13 @@ input[type="number"] { background-image: none; padding-right: 12px; }
   font-family: 'Fraunces', serif;
 }
 
+.px-slider {
+  width: 100%;
+  margin-top: 10px;
+  accent-color: var(--accent);
+  background: transparent;
+}
+
 .export-zone { padding: 16px; background: var(--ink); }
 .export-btn {
   width: 100%;
