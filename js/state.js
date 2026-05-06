@@ -12,6 +12,7 @@ const state = {
   sigSize: 8,              // pages per signature
   tab: 'template',
   templateSheet: 0,        // index of currently-shown sheet in template tab
+  showMargins: true,       // draw dashed safe-area inset on each page
 };
 
 const SIZES = {

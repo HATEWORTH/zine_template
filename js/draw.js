@@ -73,22 +73,25 @@ function drawSheet(ctx, cw, ch, paperW, paperH, sheet, side) {
 
       // Safe-area margin guide. Each edge gets the trim margin if it
       // lies on the sheet boundary, otherwise the smaller fold margin.
-      const eps = 1e-3;
-      const mL = (cell.x < eps)                              ? SAFE_MARGIN_TRIM_IN : SAFE_MARGIN_FOLD_IN;
-      const mT = (cell.y < eps)                              ? SAFE_MARGIN_TRIM_IN : SAFE_MARGIN_FOLD_IN;
-      const mR = (Math.abs(cell.x + cell.w - paperW) < eps)  ? SAFE_MARGIN_TRIM_IN : SAFE_MARGIN_FOLD_IN;
-      const mB = (Math.abs(cell.y + cell.h - paperH) < eps)  ? SAFE_MARGIN_TRIM_IN : SAFE_MARGIN_FOLD_IN;
-      ctx.save();
-      ctx.strokeStyle = 'rgba(45, 93, 63, 0.55)';
-      ctx.lineWidth = 1;
-      ctx.setLineDash([3, 3]);
-      ctx.strokeRect(
-        x + mL * sx,
-        y + mT * sy,
-        w - (mL + mR) * sx,
-        h - (mT + mB) * sy
-      );
-      ctx.restore();
+      // Skipped entirely when the user toggles to borderless mode.
+      if (state.showMargins) {
+        const eps = 1e-3;
+        const mL = (cell.x < eps)                              ? SAFE_MARGIN_TRIM_IN : SAFE_MARGIN_FOLD_IN;
+        const mT = (cell.y < eps)                              ? SAFE_MARGIN_TRIM_IN : SAFE_MARGIN_FOLD_IN;
+        const mR = (Math.abs(cell.x + cell.w - paperW) < eps)  ? SAFE_MARGIN_TRIM_IN : SAFE_MARGIN_FOLD_IN;
+        const mB = (Math.abs(cell.y + cell.h - paperH) < eps)  ? SAFE_MARGIN_TRIM_IN : SAFE_MARGIN_FOLD_IN;
+        ctx.save();
+        ctx.strokeStyle = 'rgba(45, 93, 63, 0.55)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 3]);
+        ctx.strokeRect(
+          x + mL * sx,
+          y + mT * sy,
+          w - (mL + mR) * sx,
+          h - (mT + mB) * sy
+        );
+        ctx.restore();
+      }
 
       ctx.save();
       ctx.translate(x + w/2, y + h/2);
