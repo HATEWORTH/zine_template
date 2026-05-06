@@ -465,6 +465,7 @@ canvas {
 .legend-line.fold { border-top: 1.5px dashed var(--ink); }
 .legend-line.cut { border-top: 2.5px solid var(--accent); }
 .legend-line.valley { border-top: 1.5px dashed var(--accent-2); }
+.legend-line.safe { border-top: 1px dashed var(--accent-2); }
 .legend-arrow {
   width: 14px; height: 14px;
   display: flex; align-items: center; justify-content: center;

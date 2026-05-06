@@ -3,6 +3,14 @@
 //
 // `cell` coordinates are in paper inches; sx/sy scale them to canvas pixels.
 
+// Safe-area margin guides drawn inside each non-blank page cell.
+// TRIM applies to a cell edge that lies on the sheet boundary
+// (printer can't reach all the way to the edge).
+// FOLD applies to an inner edge shared with another cell
+// (visual breathing room from a crease).
+const SAFE_MARGIN_TRIM_IN = 0.25;
+const SAFE_MARGIN_FOLD_IN = 0.125;
+
 function sizeCanvasToFit(cv, paperW, paperH, maxW, maxH) {
   // Also clamp to viewport: never wider than viewport minus some margin.
   // This keeps canvases visible on phones without depending on container width.
@@ -62,6 +70,25 @@ function drawSheet(ctx, cw, ch, paperW, paperH, sheet, side) {
     } else {
       ctx.fillStyle = '#fbf8f3';
       ctx.fillRect(x + 1, y + 1, w - 2, h - 2);
+
+      // Safe-area margin guide. Each edge gets the trim margin if it
+      // lies on the sheet boundary, otherwise the smaller fold margin.
+      const eps = 1e-3;
+      const mL = (cell.x < eps)                              ? SAFE_MARGIN_TRIM_IN : SAFE_MARGIN_FOLD_IN;
+      const mT = (cell.y < eps)                              ? SAFE_MARGIN_TRIM_IN : SAFE_MARGIN_FOLD_IN;
+      const mR = (Math.abs(cell.x + cell.w - paperW) < eps)  ? SAFE_MARGIN_TRIM_IN : SAFE_MARGIN_FOLD_IN;
+      const mB = (Math.abs(cell.y + cell.h - paperH) < eps)  ? SAFE_MARGIN_TRIM_IN : SAFE_MARGIN_FOLD_IN;
+      ctx.save();
+      ctx.strokeStyle = 'rgba(45, 93, 63, 0.55)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]);
+      ctx.strokeRect(
+        x + mL * sx,
+        y + mT * sy,
+        w - (mL + mR) * sx,
+        h - (mT + mB) * sy
+      );
+      ctx.restore();
 
       ctx.save();
       ctx.translate(x + w/2, y + h/2);

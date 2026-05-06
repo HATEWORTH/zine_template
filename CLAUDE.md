@@ -42,7 +42,7 @@ The flow is **state → layout → draw**, plus a separate wiki tab.
   - `getSaddleLayout` / `getPerfectLayout` / `getSignatureLayout` / `getFrenchBookLayout` — multi-sheet bindings; return many sheets.
   - `getLayout()` is the unified entry point and wraps single-sheet results in a one-element `sheets` array so the rest of the code is sheet-count-agnostic.
 
-- **`drawSheet(ctx, cw, ch, paperW, paperH, sheet, side)`** (`js/draw.js`) is the single rendering primitive. It is reused for both the on-screen preview and the 300-DPI PNG export — anything you change here affects both. `side` is `'front'` or `'back'`; cells are scaled from paper inches to canvas pixels via `sx = cw/paperW`, `sy = ch/paperH`.
+- **`drawSheet(ctx, cw, ch, paperW, paperH, sheet, side)`** (`js/draw.js`) is the single rendering primitive. It is reused for both the on-screen preview and the 300-DPI PNG export — anything you change here affects both. `side` is `'front'` or `'back'`; cells are scaled from paper inches to canvas pixels via `sx = cw/paperW`, `sy = ch/paperH`. Each non-blank cell gets a dashed safe-area inset; tunable via `SAFE_MARGIN_TRIM_IN` (cell edges that lie on the sheet boundary) and `SAFE_MARGIN_FOLD_IN` (cell-to-cell inner edges) at the top of the file.
 
 - **`exportPNG()`** (`js/export.js`) iterates `layout.sheets`, creates an offscreen canvas at `w*300 × h*300` per side, calls `drawSheet`, and produces a blob per file. If only one PNG would be produced it downloads that PNG directly; otherwise it bundles them into `<baseName>.zip` (via JSZip) so the browser fires only one download prompt. Inside the zip the files live in a `<baseName>/` folder as `sheet<N>_front.png` / `sheet<N>_back.png`.
 
