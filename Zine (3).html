@@ -1,0 +1,2723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Zine Press · Template Maker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800;9..144,900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1614;
+    --paper: #f4ede1;
+    --paper-2: #ebe1cf;
+    --rule: #1a1614;
+    --accent: #d63f2a;
+    --accent-2: #2d5d3f;
+    --muted: #6b6359;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* kill mobile tap-highlight rectangle and stuck focus boxes */
+  button {
+    -webkit-tap-highlight-color: transparent;
+  }
+  button:focus { outline: none; }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* Mobile-only: disable :hover states so they don't stick after taps,
+     which on Chrome mobile can leave a "ghost" of the button visible. */
+  @media (hover: none) {
+    .seg button:hover { background: transparent !important; }
+    .fold-list button:hover { background: transparent !important; }
+    .count-toggle button:hover { background: transparent !important; }
+    .template-nav button:hover:not(:disabled) { background: var(--paper) !important; color: var(--ink) !important; }
+    .export-btn:hover { background: var(--accent) !important; transform: none !important; }
+  }
+
+  html, body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(0,0,0,0.02) 1px, transparent 1px),
+      radial-gradient(circle at 70% 60%, rgba(0,0,0,0.025) 1px, transparent 1px),
+      radial-gradient(circle at 40% 80%, rgba(0,0,0,0.015) 1px, transparent 1px);
+    background-size: 3px 3px, 5px 5px, 7px 7px;
+    z-index: 1;
+    mix-blend-mode: multiply;
+  }
+
+  .app {
+    position: relative;
+    z-index: 2;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 32px 28px 80px;
+  }
+
+  /* ===== HEADER ===== */
+  header {
+    border-top: 4px solid var(--ink);
+    border-bottom: 1px solid var(--ink);
+    padding: 18px 0 14px;
+    margin-bottom: 28px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .masthead {
+    font-family: 'Fraunces', serif;
+    font-weight: 900;
+    font-size: clamp(38px, 7vw, 68px);
+    letter-spacing: -0.03em;
+    line-height: 0.9;
+    font-style: italic;
+  }
+  .masthead .amp { font-weight: 400; font-style: italic; color: var(--accent); }
+
+  .tagline {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    text-align: right;
+  }
+  .tagline strong { color: var(--ink); }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 28px;
+    align-items: start;
+  }
+  @media (max-width: 880px) { .grid { grid-template-columns: 1fr; } }
+
+  /* ===== CONTROLS ===== */
+  .panel {
+    background: var(--paper-2);
+    border: 1px solid var(--ink);
+    position: sticky;
+    top: 20px;
+  }
+  /* Disable sticky on mobile - causes paint glitches and isn't useful on small screens */
+  @media (max-width: 880px) {
+    .panel { position: static; }
+  }
+  .panel-header {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 10px 16px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    display: flex;
+    justify-content: space-between;
+  }
+  .panel-header .num {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 400;
+    color: var(--accent);
+  }
+
+  .control-group {
+    padding: 16px 16px 18px;
+    border-bottom: 1px dashed rgba(26,22,20,0.25);
+  }
+  .control-group:last-of-type { border-bottom: none; }
+
+  .control-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--muted);
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .control-label .value { color: var(--ink); font-weight: 700; }
+
+  .seg { display: grid; gap: 0; border: 1px solid var(--ink); }
+  .seg.cols-2 { grid-template-columns: 1fr 1fr; }
+  .seg.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .seg button {
+    background: transparent;
+    border: none;
+    border-right: 1px solid var(--ink);
+    padding: 9px 6px;
+    font-family: inherit;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    color: var(--ink);
+    transition: background 0.15s;
+  }
+  .seg button:last-child { border-right: none; }
+  .seg button:hover { background: rgba(26,22,20,0.06); }
+  .seg button.active { background: var(--ink); color: var(--paper); }
+
+  select, input[type="number"] {
+    width: 100%;
+    background: var(--paper);
+    border: 1px solid var(--ink);
+    padding: 9px 12px;
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--ink);
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%231a1614' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 30px;
+  }
+  input[type="number"] { background-image: none; padding-right: 12px; }
+
+  .fold-list { display: flex; flex-direction: column; border: 1px solid var(--ink); }
+  .fold-list button {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--ink);
+    padding: 10px 12px;
+    text-align: left;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 12px;
+    color: var(--ink);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.15s;
+  }
+  .fold-list button:last-child { border-bottom: none; }
+  .fold-list button:hover { background: rgba(26,22,20,0.06); }
+  .fold-list button.active { background: var(--ink); color: var(--paper); }
+  .fold-list button .pages {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    opacity: 0.7;
+    font-size: 11px;
+  }
+
+  /* count-input row */
+  .count-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    align-items: stretch;
+  }
+  .count-toggle {
+    display: flex;
+    border: 1px solid var(--ink);
+  }
+  .count-toggle button {
+    background: transparent;
+    border: none;
+    padding: 0 10px;
+    font-family: inherit;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    color: var(--ink);
+    border-right: 1px solid var(--ink);
+  }
+  .count-toggle button:last-child { border-right: none; }
+  .count-toggle button.active { background: var(--ink); color: var(--paper); }
+
+  .count-helper {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 6px;
+    font-style: italic;
+    font-family: 'Fraunces', serif;
+  }
+
+  .export-zone { padding: 16px; background: var(--ink); }
+  .export-btn {
+    width: 100%;
+    background: var(--accent);
+    color: var(--paper);
+    border: none;
+    padding: 14px;
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+  }
+  .export-btn:hover { background: #b8331f; }
+  .export-btn:active { background: #a02c1a; }
+  .export-note {
+    color: var(--paper);
+    opacity: 0.55;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-top: 8px;
+    text-align: center;
+  }
+
+  /* ===== STAGE ===== */
+  .stage {
+    background: var(--paper-2);
+    border: 1px solid var(--ink);
+    overflow: hidden;
+  }
+  .stage-header {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 0 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: stretch;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+  }
+  .tabs { display: flex; }
+  .tabs button {
+    background: transparent;
+    color: var(--paper);
+    border: none;
+    padding: 12px 16px;
+    font-family: inherit;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .tabs button.active {
+    border-bottom: 2px solid var(--accent);
+    color: var(--accent);
+  }
+  .tabs button:hover:not(.active) { color: rgba(244,237,225,0.7); }
+
+  .stage-meta {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--paper);
+    opacity: 0.9;
+    align-self: center;
+  }
+  .stage-meta .accent { color: var(--accent); }
+
+  .canvas-wrap {
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 500px;
+    background:
+      linear-gradient(135deg, transparent 49%, rgba(26,22,20,0.04) 49%, rgba(26,22,20,0.04) 51%, transparent 51%),
+      var(--paper-2);
+    background-size: 16px 16px;
+  }
+  canvas {
+    background: white;
+    box-shadow:
+      0 1px 2px rgba(0,0,0,0.08),
+      0 8px 24px rgba(0,0,0,0.12),
+      0 24px 48px rgba(0,0,0,0.08);
+    max-width: 100%;
+    height: auto;
+  }
+
+  .template-nav {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-top: 20px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+  }
+  .template-nav button {
+    background: var(--paper);
+    border: 1px solid var(--ink);
+    width: 32px;
+    height: 32px;
+    font-family: inherit;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  .template-nav button:hover:not(:disabled) { background: var(--ink); color: var(--paper); }
+  .template-nav button:disabled { opacity: 0.3; cursor: not-allowed; }
+  .template-nav .label strong {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 700;
+    font-size: 16px;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--ink);
+  }
+
+  /* viewer */
+  .viewer-wrap {
+    padding: 28px;
+    background: var(--paper-2);
+    background-image:
+      linear-gradient(135deg, transparent 49%, rgba(26,22,20,0.04) 49%, rgba(26,22,20,0.04) 51%, transparent 51%);
+    background-size: 16px 16px;
+  }
+  .sheet-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+  .sheet-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  @media (max-width: 700px) { .sheet-row { grid-template-columns: 1fr; } }
+  .sheet-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .sheet-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--muted);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .sheet-label strong {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 700;
+    font-size: 16px;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--ink);
+  }
+  .sheet-label .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent);
+  }
+  .sheet-label .dot.back { background: var(--accent-2); }
+  .sheet-card canvas { max-width: 100%; height: auto; }
+
+  .sheet-divider {
+    border: none;
+    border-top: 1px dashed rgba(26,22,20,0.3);
+    margin: 4px 0;
+  }
+  .sheet-group-label {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--ink);
+    text-align: center;
+    margin-bottom: 8px;
+    letter-spacing: -0.01em;
+  }
+  .sheet-group-label .small {
+    font-family: 'JetBrains Mono', monospace;
+    font-style: normal;
+    font-weight: 500;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--muted);
+    display: block;
+    margin-top: 2px;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    padding: 14px 16px;
+    background: var(--paper);
+    border: 1px solid var(--ink);
+    margin-top: 18px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+  }
+  .legend-item { display: flex; align-items: center; gap: 8px; }
+  .legend-line { width: 28px; height: 0; border-top: 2px solid var(--ink); }
+  .legend-line.fold { border-top: 1.5px dashed var(--ink); }
+  .legend-line.cut { border-top: 2.5px solid var(--accent); }
+  .legend-line.valley { border-top: 1.5px dashed var(--accent-2); }
+  .legend-arrow {
+    width: 14px; height: 14px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--accent);
+    font-size: 14px;
+  }
+
+  .booklet-preview {
+    background: var(--paper);
+    border: 1px solid var(--ink);
+    padding: 20px;
+    margin-top: 20px;
+  }
+  .booklet-title {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--muted);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .booklet-title strong {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 700;
+    font-size: 16px;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--ink);
+  }
+  .booklet-pages { display: flex; flex-wrap: wrap; gap: 10px; }
+  .mini-page {
+    width: 60px;
+    aspect-ratio: 0.7 / 1;
+    background: white;
+    border: 1px solid var(--ink);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 800;
+    font-size: 22px;
+    color: var(--ink);
+    position: relative;
+  }
+  .mini-page::before {
+    content: 'PAGE';
+    position: absolute;
+    top: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 500;
+    font-style: normal;
+    font-size: 7px;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+  }
+
+  /* ===== WIKI TAB ===== */
+  .wiki-wrap {
+    padding: 32px;
+    background:
+      linear-gradient(135deg, transparent 49%, rgba(26,22,20,0.04) 49%, rgba(26,22,20,0.04) 51%, transparent 51%),
+      var(--paper-2);
+    background-size: 16px 16px;
+  }
+  .wiki-intro {
+    border-top: 2px solid var(--ink);
+    border-bottom: 1px solid var(--ink);
+    padding: 14px 0;
+    margin-bottom: 28px;
+    text-align: center;
+  }
+  .wiki-intro h2 {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 800;
+    font-size: 28px;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .wiki-intro p {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+
+  .wiki-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+  }
+
+  .wiki-card {
+    background: var(--paper);
+    border: 1px solid var(--ink);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .wiki-card-header {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 10px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    border-bottom: 3px solid var(--accent);
+  }
+  .wiki-card-header .name {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 800;
+    font-size: 20px;
+    letter-spacing: -0.01em;
+  }
+  .wiki-card-header .meta {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--accent);
+  }
+
+  .wiki-diagram {
+    background: #fbf8f3;
+    padding: 18px 14px;
+    border-bottom: 1px solid var(--ink);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .step-strip {
+    display: flex;
+    align-items: stretch;
+    gap: 4px;
+    min-width: min-content;
+  }
+  .step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 0 0 auto;
+    width: 78px;
+  }
+  .step-svg {
+    width: 78px;
+    height: 78px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(26,22,20,0.15);
+    background: white;
+    margin-bottom: 6px;
+  }
+  .step-svg svg { display: block; max-width: 100%; max-height: 100%; }
+  .step-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.3;
+    padding: 0 2px;
+  }
+  .step-label .num {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 700;
+    font-size: 11px;
+    color: var(--accent);
+    text-transform: none;
+    letter-spacing: 0;
+    display: block;
+    margin-bottom: 1px;
+  }
+  .step-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    flex: 0 0 auto;
+    color: var(--accent);
+    font-size: 16px;
+    padding-bottom: 18px;
+  }
+
+  .wiki-body {
+    padding: 16px 14px;
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .wiki-section {
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--ink);
+  }
+  .wiki-section h4 {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--muted);
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+  .wiki-section ol {
+    padding-left: 18px;
+    font-size: 11.5px;
+  }
+  .wiki-section ol li { margin-bottom: 3px; }
+  .wiki-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-top: 8px;
+    border-top: 1px dashed rgba(26,22,20,0.25);
+  }
+  .wiki-tag {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    padding: 3px 8px;
+    border: 1px solid var(--ink);
+    background: var(--paper-2);
+    color: var(--ink);
+  }
+  .wiki-tag.diff-easy { background: #e8f0e2; }
+  .wiki-tag.diff-med { background: #f5ead0; }
+  .wiki-tag.diff-hard { background: #f0d7d1; }
+  .wiki-tag.use { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+  .wiki-section-title {
+    grid-column: 1 / -1;
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 700;
+    font-size: 22px;
+    color: var(--ink);
+    margin-top: 16px;
+    margin-bottom: -4px;
+    border-bottom: 1px dashed rgba(26,22,20,0.3);
+    padding-bottom: 8px;
+  }
+  .wiki-section-title:first-child { margin-top: 0; }
+
+  /* ===== INFO STRIP ===== */
+  .info-strip {
+    margin-top: 28px;
+    border-top: 1px solid var(--ink);
+    border-bottom: 4px solid var(--ink);
+    padding: 14px 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 18px;
+  }
+  .info-item {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+  }
+  .info-item strong {
+    display: block;
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 600;
+    font-size: 18px;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--ink);
+    margin-top: 2px;
+  }
+
+  footer {
+    margin-top: 24px;
+    text-align: center;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+  }
+  footer .ornament {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--accent);
+    margin: 0 8px;
+  }
+
+  .hidden { display: none !important; }
+
+  /* ==========================================================
+     MOBILE-FIRST RESPONSIVE TUNING
+     ========================================================== */
+
+  /* Tablet / smaller laptop */
+  @media (max-width: 880px) {
+    .app { padding: 20px 16px 60px; }
+    header { padding: 14px 0 12px; margin-bottom: 20px; }
+    .grid { gap: 20px; }
+    .info-strip { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    .canvas-wrap { padding: 20px; min-height: 360px; }
+    .viewer-wrap, .wiki-wrap { padding: 20px; }
+    .wiki-grid { grid-template-columns: 1fr; gap: 16px; }
+  }
+
+  /* Phone */
+  @media (max-width: 600px) {
+    .app { padding: 14px 10px 50px; }
+
+    /* HEADER */
+    header {
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 12px 0 10px;
+      margin-bottom: 16px;
+      gap: 4px;
+    }
+    .masthead { font-size: 44px; }
+    .tagline { text-align: left; font-size: 10px; letter-spacing: 0.16em; }
+    .tagline br { display: none; }
+    .tagline strong::before { content: ' · '; color: var(--muted); font-weight: 400; }
+
+    /* GRID */
+    .grid { gap: 14px; }
+
+    /* CONTROL PANEL */
+    .panel-header { padding: 9px 14px; font-size: 10px; }
+    .control-group { padding: 12px 14px 14px; }
+    .control-label { font-size: 9px; margin-bottom: 6px; }
+    .seg button { padding: 10px 4px; font-size: 10px; }
+    .fold-list button { padding: 10px; font-size: 11px; }
+    .fold-list button .pages { font-size: 10px; }
+    select, input[type="number"] { padding: 10px 12px; font-size: 14px; }
+    .count-toggle button { padding: 0 8px; font-size: 9px; }
+    .count-helper { font-size: 11px; }
+
+    /* EXPORT */
+    .export-zone { padding: 14px; }
+    .export-btn { padding: 14px; font-size: 17px; }
+    .export-note { font-size: 9px; }
+
+    /* STAGE / TABS */
+    .stage-header { padding: 0 6px; flex-wrap: wrap; }
+    .tabs button { padding: 11px 10px; font-size: 10px; letter-spacing: 0.12em; }
+    .stage-meta {
+      width: 100%;
+      padding: 6px 10px 8px;
+      text-align: center;
+      font-size: 13px;
+      border-top: 1px solid rgba(244,237,225,0.15);
+      align-self: stretch;
+    }
+
+    /* CANVAS / TEMPLATE */
+    .canvas-wrap { padding: 16px 12px; min-height: 300px; }
+    .template-nav { gap: 8px; margin-top: 14px; font-size: 10px; }
+    .template-nav button { width: 36px; height: 36px; font-size: 18px; }
+
+    /* VIEWER */
+    .viewer-wrap { padding: 14px 12px; }
+    .sheet-stack { gap: 22px; }
+    .sheet-row { gap: 16px; grid-template-columns: 1fr; }
+    .sheet-card canvas { max-width: 100%; }
+    .sheet-label { font-size: 9px; }
+    .sheet-label strong { font-size: 14px; }
+    .legend { gap: 10px; padding: 12px; font-size: 10px; }
+    .legend-item { gap: 6px; }
+    .booklet-preview { padding: 14px; }
+    .booklet-pages { gap: 8px; }
+    .mini-page { width: 50px; font-size: 18px; }
+    .mini-page::before { font-size: 6px; top: 4px; }
+
+    /* WIKI */
+    .wiki-wrap { padding: 14px 12px; }
+    .wiki-intro { padding: 10px 0; margin-bottom: 18px; }
+    .wiki-intro h2 { font-size: 22px; }
+    .wiki-intro p { font-size: 9px; letter-spacing: 0.14em; }
+    .wiki-card-header { padding: 10px 12px; }
+    .wiki-card-header .name { font-size: 17px; }
+    .wiki-card-header .meta { font-size: 8px; letter-spacing: 0.14em; }
+    .wiki-diagram { padding: 14px 10px; }
+    .step { width: 70px; }
+    .step-svg { width: 70px; height: 70px; }
+    .step-arrow { width: 14px; padding-bottom: 18px; font-size: 14px; }
+    .wiki-body { padding: 14px 12px; gap: 10px; }
+    .wiki-section { font-size: 12px; }
+    .wiki-section ol { font-size: 12px; padding-left: 16px; }
+    .wiki-tag { font-size: 9px; padding: 3px 7px; }
+    .wiki-section-title { font-size: 18px; margin-top: 10px; }
+
+    /* INFO STRIP */
+    .info-strip { grid-template-columns: 1fr 1fr; gap: 12px 14px; padding: 12px 0; }
+    .info-item { font-size: 10px; }
+    .info-item strong { font-size: 16px; }
+
+    footer {
+      margin-top: 18px;
+      font-size: 9px;
+      letter-spacing: 0.16em;
+      line-height: 1.8;
+    }
+    footer .ornament { font-size: 12px; margin: 0 4px; }
+  }
+
+  /* Very narrow phones */
+  @media (max-width: 380px) {
+    .app { padding: 12px 8px 40px; }
+    .masthead { font-size: 38px; }
+    .info-strip { grid-template-columns: 1fr; }
+    .tabs button { padding: 10px 8px; font-size: 9px; }
+    .legend { gap: 8px; }
+    .canvas-wrap { padding: 12px 8px; }
+    .viewer-wrap, .wiki-wrap { padding: 12px 8px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="masthead">Zine <span class="amp">&amp;</span> Press</div>
+    <div class="tagline">
+      Issue Nº 01 <br/>
+      <strong>Template Maker</strong> · Est. 2026
+    </div>
+  </header>
+
+  <div class="grid">
+
+    <!-- ============ CONTROLS ============ -->
+    <aside class="panel">
+      <div class="panel-header">
+        <span>Specifications</span>
+        <span class="num">№ 01</span>
+      </div>
+
+      <!-- MODE -->
+      <div class="control-group">
+        <div class="control-label"><span>Mode</span></div>
+        <div class="seg cols-2" id="mode">
+          <button data-val="single" class="active">Single Sheet</button>
+          <button data-val="multi">Multi-Sheet</button>
+        </div>
+      </div>
+
+      <!-- PAPER SIZE -->
+      <div class="control-group">
+        <div class="control-label">
+          <span>Paper Size</span>
+          <span class="value" id="size-value">US Letter</span>
+        </div>
+        <select id="size">
+          <option value="letter">US Letter — 8.5 × 11 in</option>
+          <option value="legal">US Legal — 8.5 × 14 in</option>
+          <option value="tabloid">Tabloid — 11 × 17 in</option>
+          <option value="a3">A3 — 297 × 420 mm</option>
+          <option value="a4">A4 — 210 × 297 mm</option>
+          <option value="a5">A5 — 148 × 210 mm</option>
+        </select>
+      </div>
+
+      <!-- ORIENTATION -->
+      <div class="control-group">
+        <div class="control-label"><span>Orientation</span></div>
+        <div class="seg cols-2" id="orientation">
+          <button data-val="portrait" class="active">Portrait</button>
+          <button data-val="landscape">Landscape</button>
+        </div>
+      </div>
+
+      <!-- FOLD TYPE (single sheet) -->
+      <div class="control-group" id="fold-group">
+        <div class="control-label"><span>Folding Type</span></div>
+        <div class="fold-list" id="fold">
+          <button data-val="single" data-pages="4" class="active">
+            <span>Single Fold</span><span class="pages">4 pages</span>
+          </button>
+          <button data-val="mini8" data-pages="8">
+            <span>8-Page Mini</span><span class="pages">8 pages</span>
+          </button>
+          <button data-val="accordion" data-pages="8">
+            <span>Accordion</span><span class="pages">var. pages</span>
+          </button>
+          <button data-val="gate" data-pages="6">
+            <span>Gate Fold</span><span class="pages">6 pages</span>
+          </button>
+          <button data-val="french" data-pages="8">
+            <span>French Fold</span><span class="pages">8 pages</span>
+          </button>
+          <button data-val="double-gate" data-pages="8">
+            <span>Double Gate</span><span class="pages">8 pages</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- BINDING TYPE (multi-sheet) -->
+      <div class="control-group hidden" id="binding-group">
+        <div class="control-label"><span>Binding Type</span></div>
+        <div class="fold-list" id="binding">
+          <button data-val="saddle" class="active">
+            <span>Saddle-Stitched</span><span class="pages">imposed</span>
+          </button>
+          <button data-val="perfect">
+            <span>Perfect Bound</span><span class="pages">stacked</span>
+          </button>
+          <button data-val="signature">
+            <span>Signature Booklet</span><span class="pages">grouped</span>
+          </button>
+          <button data-val="french-book">
+            <span>French-Fold Book</span><span class="pages">tip-bound</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- PAGE / SHEET COUNT -->
+      <div class="control-group" id="count-group">
+        <div class="control-label">
+          <span id="count-label-text">Page Count</span>
+          <span class="value" id="count-value">8</span>
+        </div>
+        <div class="count-row">
+          <input type="number" id="count" min="4" max="64" step="2" value="8" />
+          <div class="count-toggle hidden" id="count-toggle">
+            <button data-val="pages" class="active">Pages</button>
+            <button data-val="sheets">Sheets</button>
+          </div>
+        </div>
+        <div class="count-helper" id="count-helper"></div>
+      </div>
+
+      <!-- SIGNATURE SIZE (only for signature booklet) -->
+      <div class="control-group hidden" id="sig-group">
+        <div class="control-label">
+          <span>Pages per Signature</span>
+          <span class="value" id="sig-value">8</span>
+        </div>
+        <select id="sig-size">
+          <option value="4">4 pages (1 sheet)</option>
+          <option value="8" selected>8 pages (2 sheets)</option>
+          <option value="16">16 pages (4 sheets)</option>
+          <option value="32">32 pages (8 sheets)</option>
+        </select>
+      </div>
+
+      <div class="export-zone">
+        <button class="export-btn" id="export">Export PNG ↓</button>
+        <div class="export-note" id="export-note">Exports 1 file · 300 DPI</div>
+      </div>
+    </aside>
+
+    <!-- ============ PREVIEW ============ -->
+    <main class="stage">
+      <div class="stage-header">
+        <div class="tabs">
+          <button class="active" data-tab="template" type="button">Template</button>
+          <button data-tab="viewer" type="button">Viewer</button>
+          <button data-tab="wiki" type="button">Folds</button>
+        </div>
+        <span class="stage-meta">
+          <span id="meta-fold">Single Fold</span>
+        </span>
+      </div>
+
+      <div class="canvas-wrap" id="tab-template">
+        <canvas id="canvas"></canvas>
+        <div class="template-nav hidden" id="template-nav">
+          <button id="tpl-prev">‹</button>
+          <div class="label">Sheet <strong id="tpl-sheet-num">1</strong> of <strong id="tpl-sheet-total">1</strong></div>
+          <button id="tpl-next">›</button>
+        </div>
+      </div>
+
+      <div class="viewer-wrap hidden" id="tab-viewer">
+        <div class="sheet-stack" id="sheet-stack"></div>
+
+        <div class="legend">
+          <div class="legend-item"><span class="legend-line"></span> Sheet edge / cut</div>
+          <div class="legend-item"><span class="legend-line fold"></span> Mountain fold</div>
+          <div class="legend-item"><span class="legend-line valley"></span> Valley fold</div>
+          <div class="legend-item"><span class="legend-line cut"></span> Slit / cut line</div>
+          <div class="legend-item"><span class="legend-arrow">↑</span> Top of artwork</div>
+        </div>
+
+        <div class="booklet-preview">
+          <div class="booklet-title">↳ <strong>Reading Order</strong> · how it reads when bound/folded</div>
+          <div class="booklet-pages" id="booklet-pages"></div>
+        </div>
+      </div>
+
+      <!-- ============ WIKI TAB ============ -->
+      <div class="wiki-wrap hidden" id="tab-wiki">
+        <div class="wiki-intro">
+          <h2>The Folder's Almanac</h2>
+          <p>A reference of fold &amp; binding types</p>
+        </div>
+        <div class="wiki-grid" id="wiki-grid"></div>
+      </div>
+    </main>
+  </div>
+
+  <div class="info-strip">
+    <div class="info-item">Sheet Dimensions <strong id="info-dim">8.5 × 11 in</strong></div>
+    <div class="info-item">Total Pages <strong id="info-pages">4</strong></div>
+    <div class="info-item">Total Sheets <strong id="info-sheets">1</strong></div>
+    <div class="info-item">Page Size <strong id="info-page">4.25 × 5.5 in</strong></div>
+    <div class="info-item">Format <strong id="info-format">PNG · 300 DPI</strong></div>
+  </div>
+
+  <footer>
+    Cut along solid lines <span class="ornament">✦</span> Fold along dashed lines <span class="ornament">✦</span> Arrows indicate top of artwork
+  </footer>
+</div>
+
+<script>
+  // ============================================================
+  // STATE
+  // ============================================================
+  const state = {
+    mode: 'single',          // 'single' | 'multi'
+    size: 'letter',
+    orientation: 'portrait',
+    fold: 'single',          // single-sheet fold type
+    binding: 'saddle',       // multi-sheet binding type
+    pageCount: 8,
+    countMode: 'pages',      // 'pages' | 'sheets' (for multi-sheet input)
+    sigSize: 8,              // pages per signature
+    tab: 'template',
+    templateSheet: 0,        // index of currently-shown sheet in template tab
+  };
+
+  const SIZES = {
+    letter:  { w: 8.5, h: 11,  label: 'US Letter', short: '8.5 × 11 in' },
+    legal:   { w: 8.5, h: 14,  label: 'US Legal',  short: '8.5 × 14 in' },
+    tabloid: { w: 11,  h: 17,  label: 'Tabloid',   short: '11 × 17 in' },
+    a3:      { w: 11.69, h: 16.54, label: 'A3', short: '297 × 420 mm' },
+    a4:      { w: 8.27, h: 11.69, label: 'A4',  short: '210 × 297 mm' },
+    a5:      { w: 5.83, h: 8.27,  label: 'A5',  short: '148 × 210 mm' },
+  };
+
+  const FOLD_LABELS = {
+    'single': 'Single Fold',
+    'mini8': '8-Page Mini',
+    'accordion': 'Accordion',
+    'gate': 'Gate Fold',
+    'french': 'French Fold',
+    'double-gate': 'Double Gate',
+  };
+  const BINDING_LABELS = {
+    'saddle': 'Saddle-Stitched',
+    'perfect': 'Perfect Bound',
+    'signature': 'Signature Booklet',
+    'french-book': 'French-Fold Book',
+  };
+
+  // ============================================================
+  // ELEMENTS
+  // ============================================================
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+
+  const sizeSel = document.getElementById('size');
+  const modeBtns = document.querySelectorAll('#mode button');
+  const orientBtns = document.querySelectorAll('#orientation button');
+  const foldBtns = document.querySelectorAll('#fold button');
+  const bindingBtns = document.querySelectorAll('#binding button');
+  const countInput = document.getElementById('count');
+  const countToggleBtns = document.querySelectorAll('#count-toggle button');
+  const sigSel = document.getElementById('sig-size');
+  const tabBtns = document.querySelectorAll('.tabs button');
+
+  // ============================================================
+  // DIMENSIONS
+  // ============================================================
+  function getDimensions() {
+    const s = SIZES[state.size];
+    let w = s.w, h = s.h;
+    if (state.orientation === 'landscape') { [w, h] = [h, w]; }
+    return { w, h };
+  }
+
+  // ============================================================
+  // SINGLE-SHEET LAYOUTS (returns ONE sheet object)
+  // ============================================================
+  function getSingleLayout(fold, w, h) {
+    if (fold === 'single') {
+      const pageW = w / 2, pageH = h;
+      return {
+        pageW, pageH,
+        cells: [
+          { x: 0,     y: 0, w: pageW, h: pageH, num: 4 },
+          { x: pageW, y: 0, w: pageW, h: pageH, num: 1 },
+        ],
+        back: [
+          { x: 0,     y: 0, w: pageW, h: pageH, num: 2 },
+          { x: pageW, y: 0, w: pageW, h: pageH, num: 3 },
+        ],
+        folds: [{ x1: pageW, y1: 0, x2: pageW, y2: h, kind: 'mountain' }],
+        cuts: [],
+        readingOrder: [1, 2, 3, 4],
+      };
+    }
+    if (fold === 'mini8') {
+      const pageW = w / 4, pageH = h / 2;
+      const cells = [
+        { col: 0, row: 0, num: 5, rotate: 180 },
+        { col: 1, row: 0, num: 4, rotate: 180 },
+        { col: 2, row: 0, num: 3, rotate: 180 },
+        { col: 3, row: 0, num: 2, rotate: 180 },
+        { col: 0, row: 1, num: 6, rotate: 0 },
+        { col: 1, row: 1, num: 7, rotate: 0 },
+        { col: 2, row: 1, num: 8, rotate: 0 },
+        { col: 3, row: 1, num: 1, rotate: 0 },
+      ].map(c => ({ x: c.col * pageW, y: c.row * pageH, w: pageW, h: pageH, num: c.num, rotate: c.rotate }));
+      const folds = [
+        { x1: 0,         y1: pageH, x2: pageW,   y2: pageH, kind: 'mountain' },
+        { x1: 3*pageW,   y1: pageH, x2: w,       y2: pageH, kind: 'mountain' },
+        { x1: pageW,     y1: 0,     x2: pageW,   y2: h,     kind: 'valley' },
+        { x1: 2*pageW,   y1: 0,     x2: 2*pageW, y2: h,     kind: 'mountain' },
+        { x1: 3*pageW,   y1: 0,     x2: 3*pageW, y2: h,     kind: 'valley' },
+      ];
+      const cuts = [{ x1: pageW, y1: pageH, x2: 3*pageW, y2: pageH, kind: 'cut' }];
+      return { pageW, pageH, cells, back: null, folds, cuts, readingOrder: [1,2,3,4,5,6,7,8] };
+    }
+    if (fold === 'accordion') {
+      const n = state.pageCount;
+      const horiz = w >= h;
+      const cols = horiz ? n : 1;
+      const rows = horiz ? 1 : n;
+      const pageW = w / cols, pageH = h / rows;
+      const cells = [], folds = [], back = [];
+      for (let i = 0; i < n; i++) {
+        if (horiz) {
+          cells.push({ x: i * pageW, y: 0, w: pageW, h: pageH, num: i + 1, rotate: 0 });
+          back.push({ x: (n - 1 - i) * pageW, y: 0, w: pageW, h: pageH, num: n + i + 1, rotate: 0 });
+          if (i > 0) folds.push({ x1: i*pageW, y1: 0, x2: i*pageW, y2: h, kind: i % 2 === 1 ? 'mountain' : 'valley' });
+        } else {
+          cells.push({ x: 0, y: i * pageH, w: pageW, h: pageH, num: i + 1, rotate: 0 });
+          back.push({ x: 0, y: (n - 1 - i) * pageH, w: pageW, h: pageH, num: n + i + 1, rotate: 0 });
+          if (i > 0) folds.push({ x1: 0, y1: i*pageH, x2: w, y2: i*pageH, kind: i % 2 === 1 ? 'mountain' : 'valley' });
+        }
+      }
+      return { pageW, pageH, cells, back, folds, cuts: [], readingOrder: Array.from({length: n*2}, (_, i) => i + 1) };
+    }
+    if (fold === 'gate') {
+      const pageW = w / 3, pageH = h;
+      return {
+        pageW, pageH,
+        cells: [
+          { x: 0,       y: 0, w: pageW, h: pageH, num: 6 },
+          { x: pageW,   y: 0, w: pageW, h: pageH, num: 1 },
+          { x: 2*pageW, y: 0, w: pageW, h: pageH, num: 2 },
+        ],
+        back: [
+          { x: 0,       y: 0, w: pageW, h: pageH, num: 3 },
+          { x: pageW,   y: 0, w: pageW, h: pageH, num: 4 },
+          { x: 2*pageW, y: 0, w: pageW, h: pageH, num: 5 },
+        ],
+        folds: [
+          { x1: pageW,   y1: 0, x2: pageW,   y2: h, kind: 'valley' },
+          { x1: 2*pageW, y1: 0, x2: 2*pageW, y2: h, kind: 'valley' },
+        ],
+        cuts: [],
+        readingOrder: [1, 2, 3, 4, 5, 6],
+      };
+    }
+    if (fold === 'french') {
+      const pageW = w / 2, pageH = h / 2;
+      return {
+        pageW, pageH,
+        cells: [
+          { x: 0,     y: 0,     w: pageW, h: pageH, num: 5, rotate: 180 },
+          { x: pageW, y: 0,     w: pageW, h: pageH, num: 4, rotate: 180 },
+          { x: 0,     y: pageH, w: pageW, h: pageH, num: 8, rotate: 0 },
+          { x: pageW, y: pageH, w: pageW, h: pageH, num: 1, rotate: 0 },
+        ],
+        back: [
+          { x: 0,     y: 0,     w: pageW, h: pageH, num: 3, rotate: 180 },
+          { x: pageW, y: 0,     w: pageW, h: pageH, num: 6, rotate: 180 },
+          { x: 0,     y: pageH, w: pageW, h: pageH, num: 2, rotate: 0 },
+          { x: pageW, y: pageH, w: pageW, h: pageH, num: 7, rotate: 0 },
+        ],
+        folds: [
+          { x1: pageW, y1: 0, x2: pageW, y2: h, kind: 'mountain' },
+          { x1: 0, y1: pageH, x2: w, y2: pageH, kind: 'mountain' },
+        ],
+        cuts: [],
+        readingOrder: [1,2,3,4,5,6,7,8],
+      };
+    }
+    if (fold === 'double-gate') {
+      const pageW = w / 4, pageH = h;
+      return {
+        pageW, pageH,
+        cells: [
+          { x: 0,       y: 0, w: pageW, h: pageH, num: 8 },
+          { x: pageW,   y: 0, w: pageW, h: pageH, num: 1 },
+          { x: 2*pageW, y: 0, w: pageW, h: pageH, num: 2 },
+          { x: 3*pageW, y: 0, w: pageW, h: pageH, num: 3 },
+        ],
+        back: [
+          { x: 0,       y: 0, w: pageW, h: pageH, num: 7 },
+          { x: pageW,   y: 0, w: pageW, h: pageH, num: 6 },
+          { x: 2*pageW, y: 0, w: pageW, h: pageH, num: 5 },
+          { x: 3*pageW, y: 0, w: pageW, h: pageH, num: 4 },
+        ],
+        folds: [
+          { x1: pageW,   y1: 0, x2: pageW,   y2: h, kind: 'valley' },
+          { x1: 2*pageW, y1: 0, x2: 2*pageW, y2: h, kind: 'mountain' },
+          { x1: 3*pageW, y1: 0, x2: 3*pageW, y2: h, kind: 'valley' },
+        ],
+        cuts: [],
+        readingOrder: [1,2,3,4,5,6,7,8],
+      };
+    }
+  }
+
+  // ============================================================
+  // MULTI-SHEET LAYOUTS (returns ARRAY of sheet objects)
+  // Each sheet has the same shape as a single-sheet layout.
+  // ============================================================
+
+  // Saddle-stitch imposition: pages get placed so when sheets are stacked
+  // and folded in half together, page numbers run in sequence.
+  // For an N-page booklet (N divisible by 4) on N/4 sheets:
+  // Sheet i (0-indexed) front-left = N - 2i, front-right = 2i + 1
+  //                    back-left  = 2i + 2,  back-right  = N - 2i - 1
+  function getSaddleLayout(w, h, totalPages) {
+    const sheets = [];
+    const sheetCount = totalPages / 4;
+    const pageW = w / 2, pageH = h;
+    for (let i = 0; i < sheetCount; i++) {
+      const flNum = totalPages - 2 * i;       // front-left (outer)
+      const frNum = 2 * i + 1;                 // front-right
+      const blNum = 2 * i + 2;                 // back-left
+      const brNum = totalPages - 2 * i - 1;    // back-right
+      sheets.push({
+        pageW, pageH,
+        cells: [
+          { x: 0,     y: 0, w: pageW, h: pageH, num: flNum },
+          { x: pageW, y: 0, w: pageW, h: pageH, num: frNum },
+        ],
+        back: [
+          { x: 0,     y: 0, w: pageW, h: pageH, num: blNum },
+          { x: pageW, y: 0, w: pageW, h: pageH, num: brNum },
+        ],
+        folds: [{ x1: pageW, y1: 0, x2: pageW, y2: h, kind: 'mountain' }],
+        cuts: [],
+        sheetNote: `Sheet ${i + 1} (innermost = sheet ${sheetCount})`,
+      });
+    }
+    return {
+      sheets,
+      pageW, pageH,
+      readingOrder: Array.from({length: totalPages}, (_, i) => i + 1),
+      assembly: 'Stack sheets in order (sheet 1 on outside), fold all together in half, staple along spine.',
+    };
+  }
+
+  // Perfect bound: each sheet is just folded in half independently,
+  // sheets are stacked sequentially and glued/bound at the spine.
+  // Sheet i contains pages 4i+1, 4i+2, 4i+3, 4i+4.
+  function getPerfectLayout(w, h, totalPages) {
+    const sheets = [];
+    const sheetCount = totalPages / 4;
+    const pageW = w / 2, pageH = h;
+    for (let i = 0; i < sheetCount; i++) {
+      const p1 = 4*i + 1; // front-right (cover-side)
+      const p2 = 4*i + 2; // back-left
+      const p3 = 4*i + 3; // back-right
+      const p4 = 4*i + 4; // front-left
+      sheets.push({
+        pageW, pageH,
+        cells: [
+          { x: 0,     y: 0, w: pageW, h: pageH, num: p4 },
+          { x: pageW, y: 0, w: pageW, h: pageH, num: p1 },
+        ],
+        back: [
+          { x: 0,     y: 0, w: pageW, h: pageH, num: p2 },
+          { x: pageW, y: 0, w: pageW, h: pageH, num: p3 },
+        ],
+        folds: [{ x1: pageW, y1: 0, x2: pageW, y2: h, kind: 'mountain' }],
+        cuts: [],
+        sheetNote: `Sheet ${i + 1} · pages ${p1}–${p4}`,
+      });
+    }
+    return {
+      sheets,
+      pageW, pageH,
+      readingOrder: Array.from({length: totalPages}, (_, i) => i + 1),
+      assembly: 'Fold each sheet individually in half. Stack folded sheets in order. Glue along spine.',
+    };
+  }
+
+  // Signature booklet: groups of saddle-stitched signatures.
+  // sigPages = pages per signature (4, 8, 16, 32...).
+  // Total pages should be a multiple of sigPages.
+  function getSignatureLayout(w, h, totalPages, sigPages) {
+    const sheets = [];
+    const pageW = w / 2, pageH = h;
+    const sigCount = Math.ceil(totalPages / sigPages);
+    const sheetsPerSig = sigPages / 4;
+    let sheetIndex = 0;
+    for (let s = 0; s < sigCount; s++) {
+      const sigStart = s * sigPages;       // first page in this signature
+      const pagesInThisSig = Math.min(sigPages, totalPages - sigStart);
+      // For final partial signature, we still impose for full sigPages but mark extras as blank
+      const N = sigPages;
+      const sheetsThisSig = sheetsPerSig;
+      for (let i = 0; i < sheetsThisSig; i++) {
+        // saddle imposition WITHIN this signature
+        const fl = sigStart + (N - 2 * i);
+        const fr = sigStart + (2 * i + 1);
+        const bl = sigStart + (2 * i + 2);
+        const br = sigStart + (N - 2 * i - 1);
+        const mark = (n) => (n - sigStart > pagesInThisSig) ? null : n;
+        const flN = mark(fl), frN = mark(fr), blN = mark(bl), brN = mark(br);
+        sheets.push({
+          pageW, pageH,
+          cells: [
+            flN ? { x: 0, y: 0, w: pageW, h: pageH, num: flN } : { x: 0, y: 0, w: pageW, h: pageH, blank: true },
+            frN ? { x: pageW, y: 0, w: pageW, h: pageH, num: frN } : { x: pageW, y: 0, w: pageW, h: pageH, blank: true },
+          ],
+          back: [
+            blN ? { x: 0, y: 0, w: pageW, h: pageH, num: blN } : { x: 0, y: 0, w: pageW, h: pageH, blank: true },
+            brN ? { x: pageW, y: 0, w: pageW, h: pageH, num: brN } : { x: pageW, y: 0, w: pageW, h: pageH, blank: true },
+          ],
+          folds: [{ x1: pageW, y1: 0, x2: pageW, y2: h, kind: 'mountain' }],
+          cuts: [],
+          sheetNote: `Signature ${s + 1} · sheet ${i + 1} of ${sheetsThisSig}`,
+          signatureGroup: s + 1,
+        });
+        sheetIndex++;
+      }
+    }
+    return {
+      sheets,
+      pageW, pageH,
+      sigCount,
+      sheetsPerSig,
+      readingOrder: Array.from({length: totalPages}, (_, i) => i + 1),
+      assembly: `Build ${sigCount} saddle-stitched signature${sigCount > 1 ? 's' : ''} (${sigPages} pages each). Stack signatures in order, sew or glue along spine.`,
+    };
+  }
+
+  // French-fold book: each sheet is French-folded (4 pages per side),
+  // with the open edge becoming the bound edge (or trimmed).
+  // For simplicity, treat as multiple French folds bound sequentially.
+  // Each sheet = 4 pages on one side (front/back if printed double-sided makes 8/sheet).
+  // We treat each "sheet" as 8 pages.
+  function getFrenchBookLayout(w, h, totalPages) {
+    const sheets = [];
+    const pageW = w / 2, pageH = h / 2;
+    const sheetCount = Math.ceil(totalPages / 8);
+    for (let i = 0; i < sheetCount; i++) {
+      const base = i * 8;
+      // pages on this sheet are base+1 ... base+8
+      // saddle-style imposition for a folded-in-quarters sheet
+      const p = (n) => (n <= totalPages) ? n : null;
+      const cell = (n) => n ? { num: n } : { blank: true };
+
+      // front: top row rotated, like the single french fold
+      // pages on this sheet (adapt the single french layout):
+      //   front: top-left=base+5 (rot), top-right=base+4 (rot), bot-left=base+8, bot-right=base+1
+      //   back:  top-left=base+3 (rot), top-right=base+6 (rot), bot-left=base+2, bot-right=base+7
+      const f_tl = p(base + 5), f_tr = p(base + 4);
+      const f_bl = p(base + 8), f_br = p(base + 1);
+      const b_tl = p(base + 3), b_tr = p(base + 6);
+      const b_bl = p(base + 2), b_br = p(base + 7);
+
+      const buildCell = (x, y, num, rotate) => {
+        if (num) return { x, y, w: pageW, h: pageH, num, rotate };
+        return { x, y, w: pageW, h: pageH, blank: true };
+      };
+
+      sheets.push({
+        pageW, pageH,
+        cells: [
+          buildCell(0,     0,     f_tl, 180),
+          buildCell(pageW, 0,     f_tr, 180),
+          buildCell(0,     pageH, f_bl, 0),
+          buildCell(pageW, pageH, f_br, 0),
+        ],
+        back: [
+          buildCell(0,     0,     b_tl, 180),
+          buildCell(pageW, 0,     b_tr, 180),
+          buildCell(0,     pageH, b_bl, 0),
+          buildCell(pageW, pageH, b_br, 0),
+        ],
+        folds: [
+          { x1: pageW, y1: 0, x2: pageW, y2: h, kind: 'mountain' },
+          { x1: 0, y1: pageH, x2: w, y2: pageH, kind: 'mountain' },
+        ],
+        cuts: [],
+        sheetNote: `Sheet ${i + 1} · pages ${base + 1}–${Math.min(base + 8, totalPages)}`,
+      });
+    }
+    return {
+      sheets,
+      pageW, pageH,
+      readingOrder: Array.from({length: totalPages}, (_, i) => i + 1),
+      assembly: 'Fold each sheet in half twice (French fold). Stack with folded edges to spine, bind along spine. Trim top/outer edges if desired.',
+    };
+  }
+
+  // ============================================================
+  // GET LAYOUT (unified — returns { sheets: [...], ... })
+  // ============================================================
+  function getLayout() {
+    const { w, h } = getDimensions();
+
+    if (state.mode === 'single') {
+      const single = getSingleLayout(state.fold, w, h);
+      return {
+        sheets: [single],  // wrap single layout in array for uniform handling
+        pageW: single.pageW,
+        pageH: single.pageH,
+        readingOrder: single.readingOrder,
+        assembly: null,
+      };
+    }
+
+    // multi-sheet
+    const totalPages = getEffectivePageCount();
+    if (state.binding === 'saddle') return getSaddleLayout(w, h, totalPages);
+    if (state.binding === 'perfect') return getPerfectLayout(w, h, totalPages);
+    if (state.binding === 'signature') return getSignatureLayout(w, h, totalPages, state.sigSize);
+    if (state.binding === 'french-book') return getFrenchBookLayout(w, h, totalPages);
+  }
+
+  // ============================================================
+  // PAGE/SHEET COUNT MATH
+  // ============================================================
+  function pagesPerSheet() {
+    if (state.mode === 'single') {
+      // single sheet = total pages by definition
+      const map = { 'single': 4, 'mini8': 8, 'gate': 6, 'french': 8, 'double-gate': 8, 'accordion': state.pageCount * 2 };
+      return map[state.fold];
+    }
+    if (state.binding === 'french-book') return 8;
+    return 4; // saddle, perfect, signature: 4 pages per sheet
+  }
+
+  function getEffectivePageCount() {
+    return state.pageCount;
+  }
+
+  function getSheetCount() {
+    if (state.mode === 'single') return 1;
+    return Math.ceil(state.pageCount / pagesPerSheet());
+  }
+
+  function getMinPageCount() {
+    if (state.mode === 'single') return null;
+    if (state.binding === 'signature') return state.sigSize;
+    if (state.binding === 'french-book') return 8;
+    return 4;
+  }
+
+  function getPageStep() {
+    if (state.binding === 'signature') return state.sigSize;
+    if (state.binding === 'french-book') return 8;
+    return 4;
+  }
+
+  // ============================================================
+  // EVENTS
+  // ============================================================
+  modeBtns.forEach(b => b.addEventListener('click', () => {
+    modeBtns.forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    state.mode = b.dataset.val;
+
+    const isMulti = state.mode === 'multi';
+    document.getElementById('fold-group').classList.toggle('hidden', isMulti);
+    document.getElementById('binding-group').classList.toggle('hidden', !isMulti);
+    document.getElementById('count-toggle').classList.toggle('hidden', !isMulti);
+    document.getElementById('sig-group').classList.toggle('hidden', !(isMulti && state.binding === 'signature'));
+
+    // reset sheet indices
+    state.templateSheet = 0;
+
+    // sensible default page count
+    if (isMulti) {
+      state.pageCount = 16;
+      countInput.value = 16;
+    } else {
+      // single sheet: revert to fold default
+      const activeFold = document.querySelector('#fold button.active');
+      state.fold = activeFold.dataset.val;
+      state.pageCount = parseInt(activeFold.dataset.pages, 10);
+      countInput.value = state.pageCount;
+    }
+    render();
+  }));
+
+  sizeSel.addEventListener('change', e => {
+    state.size = e.target.value;
+    document.getElementById('size-value').textContent = SIZES[state.size].label;
+    render();
+  });
+
+  orientBtns.forEach(b => b.addEventListener('click', () => {
+    orientBtns.forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    state.orientation = b.dataset.val;
+    render();
+  }));
+
+  foldBtns.forEach(b => b.addEventListener('click', () => {
+    foldBtns.forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    state.fold = b.dataset.val;
+    if (state.fold === 'accordion') {
+      state.pageCount = 4;
+      countInput.value = 4;
+      countInput.min = 4;
+      countInput.disabled = false;
+    } else {
+      state.pageCount = parseInt(b.dataset.pages, 10);
+      countInput.value = state.pageCount;
+      countInput.disabled = true;
+    }
+    render();
+  }));
+
+  bindingBtns.forEach(b => b.addEventListener('click', () => {
+    bindingBtns.forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    state.binding = b.dataset.val;
+    document.getElementById('sig-group').classList.toggle('hidden', state.binding !== 'signature');
+    // ensure pageCount is valid for new binding
+    const step = getPageStep();
+    if (state.pageCount % step !== 0) {
+      state.pageCount = Math.ceil(state.pageCount / step) * step;
+      countInput.value = state.pageCount;
+    }
+    state.templateSheet = 0;
+    render();
+  }));
+
+  countInput.addEventListener('input', e => {
+    let v = parseInt(e.target.value, 10);
+    if (isNaN(v) || v < 1) v = 4;
+    // Multi-sheet: count toggle determines if input is pages or sheets
+    if (state.mode === 'multi') {
+      if (state.countMode === 'sheets') {
+        const pps = pagesPerSheet();
+        v = Math.max(1, v);
+        state.pageCount = v * pps;
+      } else {
+        const step = getPageStep();
+        if (v % step !== 0) v = Math.ceil(v / step) * step;
+        if (v < step) v = step;
+        if (v > 256) v = 256;
+        state.pageCount = v;
+      }
+    } else {
+      // single, accordion only
+      if (state.fold === 'accordion') {
+        if (v < 2) v = 2;
+        if (v > 16) v = 16;
+        state.pageCount = v;
+      }
+    }
+    state.templateSheet = 0;
+    render();
+  });
+
+  countToggleBtns.forEach(b => b.addEventListener('click', () => {
+    countToggleBtns.forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    state.countMode = b.dataset.val;
+    // update the input value to reflect the new mode
+    if (state.countMode === 'sheets') {
+      countInput.value = getSheetCount();
+    } else {
+      countInput.value = state.pageCount;
+    }
+    render();
+  }));
+
+  sigSel.addEventListener('change', e => {
+    state.sigSize = parseInt(e.target.value, 10);
+    document.getElementById('sig-value').textContent = state.sigSize;
+    // make sure pageCount is multiple of sigSize
+    if (state.pageCount % state.sigSize !== 0) {
+      state.pageCount = Math.ceil(state.pageCount / state.sigSize) * state.sigSize;
+      if (state.countMode === 'pages') countInput.value = state.pageCount;
+    }
+    state.templateSheet = 0;
+    render();
+  });
+
+  tabBtns.forEach(b => b.addEventListener('click', () => {
+    tabBtns.forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    state.tab = b.dataset.tab;
+    document.getElementById('tab-template').classList.toggle('hidden', state.tab !== 'template');
+    document.getElementById('tab-viewer').classList.toggle('hidden', state.tab !== 'viewer');
+    document.getElementById('tab-wiki').classList.toggle('hidden', state.tab !== 'wiki');
+    if (state.tab === 'wiki') renderWiki();
+    render();
+  }));
+
+  document.getElementById('tpl-prev').addEventListener('click', () => {
+    if (state.templateSheet > 0) {
+      state.templateSheet--;
+      render();
+    }
+  });
+  document.getElementById('tpl-next').addEventListener('click', () => {
+    const layout = getLayout();
+    if (state.templateSheet < layout.sheets.length - 1) {
+      state.templateSheet++;
+      render();
+    }
+  });
+
+  document.getElementById('export').addEventListener('click', exportPNG);
+
+  // initialize: single mode, single fold, count is locked
+  countInput.disabled = true;
+
+  // ============================================================
+  // RENDER
+  // ============================================================
+  function render() {
+    const { w, h } = getDimensions();
+    const layout = getLayout();
+    state.templateSheet = Math.min(state.templateSheet, layout.sheets.length - 1);
+
+    if (state.tab === 'template') {
+      sizeCanvasToFit(canvas, w, h, 720, 600);
+      drawSheet(ctx, canvas.width, canvas.height, w, h, layout.sheets[state.templateSheet], 'front');
+
+      const tplNav = document.getElementById('template-nav');
+      if (layout.sheets.length > 1) {
+        tplNav.classList.remove('hidden');
+        document.getElementById('tpl-sheet-num').textContent = state.templateSheet + 1;
+        document.getElementById('tpl-sheet-total').textContent = layout.sheets.length;
+        document.getElementById('tpl-prev').disabled = state.templateSheet === 0;
+        document.getElementById('tpl-next').disabled = state.templateSheet === layout.sheets.length - 1;
+      } else {
+        tplNav.classList.add('hidden');
+      }
+    } else {
+      renderViewer(layout, w, h);
+    }
+    updateMeta(layout);
+    updateLabels();
+  }
+
+  function updateLabels() {
+    // count label text
+    const ct = document.getElementById('count-label-text');
+    if (state.mode === 'single' && state.fold !== 'accordion') {
+      ct.textContent = 'Page Count (fixed)';
+    } else if (state.mode === 'multi' && state.countMode === 'sheets') {
+      ct.textContent = 'Sheet Count';
+    } else {
+      ct.textContent = 'Page Count';
+    }
+    document.getElementById('count-value').textContent =
+      state.mode === 'multi' && state.countMode === 'sheets' ? getSheetCount() : state.pageCount;
+
+    // helper text
+    const helper = document.getElementById('count-helper');
+    if (state.mode === 'multi') {
+      const pages = state.pageCount;
+      const sheets = getSheetCount();
+      helper.textContent = `${pages} pages on ${sheets} sheet${sheets > 1 ? 's' : ''} · ${pagesPerSheet()} pages/sheet`;
+    } else if (state.fold === 'accordion') {
+      helper.textContent = `${state.pageCount} panels per side · ${state.pageCount * 2} pages total double-sided`;
+    } else {
+      helper.textContent = '';
+    }
+
+    // sig value
+    document.getElementById('sig-value').textContent = state.sigSize;
+
+    // export note
+    const layout = getLayout();
+    const totalFiles = layout.sheets.reduce((sum, s) => sum + (s.back ? 2 : 1), 0);
+    document.getElementById('export-note').textContent =
+      `Exports ${totalFiles} file${totalFiles > 1 ? 's' : ''} · 300 DPI`;
+  }
+
+  function updateMeta(layout) {
+    const s = SIZES[state.size];
+    const { w, h } = getDimensions();
+    const labelText = state.mode === 'multi' ? BINDING_LABELS[state.binding] : FOLD_LABELS[state.fold];
+    document.getElementById('meta-fold').textContent = labelText;
+    document.getElementById('info-dim').textContent =
+      state.orientation === 'landscape' ? s.short.split('×').reverse().join('×') : s.short;
+    document.getElementById('info-pages').textContent =
+      state.mode === 'single' && state.fold === 'accordion'
+        ? state.pageCount * 2
+        : state.mode === 'single'
+          ? layout.sheets[0].cells.length + (layout.sheets[0].back ? layout.sheets[0].back.length : 0)
+          : state.pageCount;
+    document.getElementById('info-sheets').textContent = getSheetCount();
+    document.getElementById('info-page').textContent =
+      `${layout.pageW.toFixed(2)} × ${layout.pageH.toFixed(2)} in`;
+  }
+
+  function sizeCanvasToFit(cv, paperW, paperH, maxW, maxH) {
+    // Also clamp to viewport: never wider than viewport minus some margin.
+    // This keeps canvases visible on phones without depending on container width.
+    const vw = window.innerWidth;
+    const viewportCap = Math.max(180, vw - 60); // leave space for app padding
+    const effectiveMaxW = Math.min(maxW, viewportCap);
+
+    const ratio = paperW / paperH;
+    let dispW, dispH;
+    if (ratio > effectiveMaxW / maxH) {
+      dispW = effectiveMaxW; dispH = effectiveMaxW / ratio;
+    } else {
+      dispH = maxH; dispW = maxH * ratio;
+    }
+    const dpr = window.devicePixelRatio || 1;
+    const scale = 2 * dpr;
+    cv.width = dispW * scale;
+    cv.height = dispH * scale;
+    cv.style.width = dispW + 'px';
+    cv.style.height = dispH + 'px';
+  }
+
+  // ============================================================
+  // VIEWER (multi-sheet aware)
+  // ============================================================
+  function renderViewer(layout, w, h) {
+    const stack = document.getElementById('sheet-stack');
+    stack.innerHTML = '';
+
+    // group by signature if applicable
+    const groups = [];
+    let currentGroup = null;
+    layout.sheets.forEach((sheet, idx) => {
+      const groupKey = sheet.signatureGroup || 0;
+      if (!currentGroup || currentGroup.key !== groupKey) {
+        currentGroup = { key: groupKey, sheets: [], idx };
+        groups.push(currentGroup);
+      }
+      currentGroup.sheets.push({ sheet, idx });
+    });
+
+    groups.forEach(group => {
+      if (state.binding === 'signature' && layout.sigCount > 1) {
+        const lab = document.createElement('div');
+        lab.className = 'sheet-group-label';
+        lab.innerHTML = `Signature ${group.key} <span class="small">${group.sheets.length} sheet${group.sheets.length > 1 ? 's' : ''}</span>`;
+        stack.appendChild(lab);
+      }
+      group.sheets.forEach(({ sheet, idx }) => {
+        const row = document.createElement('div');
+        row.className = 'sheet-row';
+
+        const front = makeSheetCard(`Sheet ${idx + 1} — Front`, false, idx, 'front', sheet, w, h);
+        row.appendChild(front);
+
+        if (sheet.back) {
+          const back = makeSheetCard(`Sheet ${idx + 1} — Back`, true, idx, 'back', sheet, w, h);
+          row.appendChild(back);
+        }
+
+        stack.appendChild(row);
+      });
+    });
+
+    // booklet preview
+    renderBookletPreview(layout);
+  }
+
+  function makeSheetCard(label, isBack, idx, side, sheet, w, h) {
+    const card = document.createElement('div');
+    card.className = 'sheet-card';
+    const lab = document.createElement('div');
+    lab.className = 'sheet-label';
+    lab.innerHTML = `<span class="dot ${isBack ? 'back' : ''}"></span> <strong>${label}</strong>`;
+    card.appendChild(lab);
+    const cv = document.createElement('canvas');
+    card.appendChild(cv);
+    const ictx = cv.getContext('2d');
+    sizeCanvasToFit(cv, w, h, 460, 380);
+    drawSheet(ictx, cv.width, cv.height, w, h, sheet, side);
+    return card;
+  }
+
+  function renderBookletPreview(layout) {
+    const container = document.getElementById('booklet-pages');
+    container.innerHTML = '';
+    if (!layout.readingOrder) return;
+    layout.readingOrder.forEach(p => {
+      const el = document.createElement('div');
+      el.className = 'mini-page';
+      el.textContent = p;
+      container.appendChild(el);
+    });
+  }
+
+  // ============================================================
+  // DRAW
+  // ============================================================
+  function drawSheet(ctx, cw, ch, paperW, paperH, sheet, side) {
+    ctx.clearRect(0, 0, cw, ch);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, cw, ch);
+
+    if (!sheet) return;
+    const cells = side === 'back' ? sheet.back : sheet.cells;
+    if (!cells) return;
+
+    const sx = cw / paperW;
+    const sy = ch / paperH;
+
+    cells.forEach(cell => {
+      const x = cell.x * sx, y = cell.y * sy;
+      const w = cell.w * sx, h = cell.h * sy;
+
+      if (cell.blank) {
+        ctx.save();
+        ctx.fillStyle = '#fbf8f3';
+        ctx.fillRect(x + 1, y + 1, w - 2, h - 2);
+        ctx.strokeStyle = 'rgba(26,22,20,0.18)';
+        ctx.lineWidth = 1;
+        for (let i = -h; i < w; i += 8) {
+          ctx.beginPath();
+          ctx.moveTo(x + i, y + h);
+          ctx.lineTo(x + i + h, y);
+          ctx.stroke();
+        }
+        ctx.fillStyle = '#6b6359';
+        ctx.font = `500 ${Math.max(10, Math.min(w,h)*0.06)}px JetBrains Mono, monospace`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('BLANK', x + w/2, y + h/2);
+        ctx.restore();
+      } else {
+        ctx.fillStyle = '#fbf8f3';
+        ctx.fillRect(x + 1, y + 1, w - 2, h - 2);
+
+        ctx.save();
+        ctx.translate(x + w/2, y + h/2);
+        if (cell.rotate) ctx.rotate(cell.rotate * Math.PI / 180);
+
+        const fontSize = Math.min(w, h) * 0.32;
+
+        ctx.fillStyle = '#1a1614';
+        ctx.font = `italic 800 ${fontSize}px Fraunces, serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(String(cell.num), 0, fontSize * 0.05);
+
+        ctx.fillStyle = '#6b6359';
+        ctx.font = `500 ${Math.max(9, fontSize * 0.14)}px JetBrains Mono, monospace`;
+        ctx.fillText('PAGE', 0, -fontSize * 0.45);
+
+        const arrowY = -h/2 + Math.min(w,h) * 0.13;
+        ctx.fillStyle = '#d63f2a';
+        ctx.font = `bold ${Math.max(12, fontSize * 0.24)}px JetBrains Mono, monospace`;
+        ctx.fillText('↑', 0, arrowY);
+        ctx.font = `500 ${Math.max(7, fontSize * 0.10)}px JetBrains Mono, monospace`;
+        ctx.fillText('TOP', 0, arrowY + fontSize * 0.20);
+
+        ctx.restore();
+      }
+    });
+
+    ctx.strokeStyle = '#1a1614';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([]);
+    ctx.strokeRect(1, 1, cw - 2, ch - 2);
+
+    if (sheet.folds) {
+      sheet.folds.forEach(f => {
+        ctx.beginPath();
+        ctx.moveTo(f.x1 * sx, f.y1 * sy);
+        ctx.lineTo(f.x2 * sx, f.y2 * sy);
+        if (f.kind === 'valley') {
+          ctx.strokeStyle = '#2d5d3f';
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([2, 4]);
+        } else {
+          ctx.strokeStyle = '#1a1614';
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([8, 6]);
+        }
+        ctx.stroke();
+      });
+      ctx.setLineDash([]);
+    }
+
+    if (sheet.cuts && sheet.cuts.length) {
+      ctx.strokeStyle = '#d63f2a';
+      ctx.lineWidth = 2.5;
+      sheet.cuts.forEach(c => {
+        ctx.beginPath();
+        ctx.moveTo(c.x1 * sx, c.y1 * sy);
+        ctx.lineTo(c.x2 * sx, c.y2 * sy);
+        ctx.stroke();
+      });
+      ctx.fillStyle = '#d63f2a';
+      ctx.font = `${Math.max(14, cw * 0.02)}px serif`;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      const c0 = sheet.cuts[0];
+      ctx.fillText('✂', c0.x1 * sx - 18, c0.y1 * sy);
+    }
+
+    drawCornerMarks(ctx, cw, ch);
+  }
+
+  function drawCornerMarks(ctx, cw, ch) {
+    const len = Math.min(cw, ch) * 0.025;
+    const off = 6;
+    ctx.strokeStyle = '#1a1614';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([]);
+    const corners = [
+      [0, 0, 1, 1], [cw, 0, -1, 1],
+      [0, ch, 1, -1], [cw, ch, -1, -1],
+    ];
+    corners.forEach(([x, y, dx, dy]) => {
+      ctx.beginPath();
+      ctx.moveTo(x + dx * off, y);
+      ctx.lineTo(x + dx * (off + len), y);
+      ctx.moveTo(x, y + dy * off);
+      ctx.lineTo(x, y + dy * (off + len));
+      ctx.stroke();
+    });
+  }
+
+  // ============================================================
+  // EXPORT
+  // ============================================================
+  function exportPNG() {
+    const { w, h } = getDimensions();
+    const layout = getLayout();
+    const DPI = 300;
+    const baseFold = state.mode === 'multi' ? state.binding : state.fold;
+
+    layout.sheets.forEach((sheet, sheetIdx) => {
+      const sheetSuffix = layout.sheets.length > 1 ? `_sheet${sheetIdx + 1}` : '';
+
+      // front
+      const frontCanvas = document.createElement('canvas');
+      frontCanvas.width = Math.round(w * DPI);
+      frontCanvas.height = Math.round(h * DPI);
+      drawSheet(frontCanvas.getContext('2d'), frontCanvas.width, frontCanvas.height, w, h, sheet, 'front');
+      frontCanvas.toBlob(blob => {
+        downloadBlob(blob, `zine_${baseFold}_${state.size}_${state.orientation}${sheetSuffix}_front.png`);
+      }, 'image/png');
+
+      if (sheet.back) {
+        const backCanvas = document.createElement('canvas');
+        backCanvas.width = Math.round(w * DPI);
+        backCanvas.height = Math.round(h * DPI);
+        drawSheet(backCanvas.getContext('2d'), backCanvas.width, backCanvas.height, w, h, sheet, 'back');
+        backCanvas.toBlob(blob => {
+          downloadBlob(blob, `zine_${baseFold}_${state.size}_${state.orientation}${sheetSuffix}_back.png`);
+        }, 'image/png');
+      }
+    });
+  }
+
+  function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // ============================================================
+  // WIKI DATA
+  // ============================================================
+  const WIKI = [
+    { section: 'Single-Sheet Folds' },
+    {
+      id: 'single', name: 'Single Fold', pages: '4 pages · 1 sheet',
+      difficulty: 'easy',
+      uses: ['Greeting card', 'Simple booklet', 'Menu'],
+      howTo: [
+        'Print double-sided.',
+        'Fold in half along the center.',
+        'Done. Cover is page 1, back is page 4.',
+      ],
+      notes: 'The simplest fold. A single sheet of paper folded once.',
+      svg: svgSingle,
+    },
+    {
+      id: 'mini8', name: '8-Page Mini Zine', pages: '8 pages · 1 sheet',
+      difficulty: 'medium',
+      uses: ['DIY zines', 'Pocket comics', 'Show flyers'],
+      howTo: [
+        'Print single-sided.',
+        'Fold sheet in half along the long edge, then unfold.',
+        'Fold in half the other way and cut the slit (red line) only between the inner panels.',
+        'Push the two ends toward each other so the sheet collapses into a star.',
+        'Flatten into a booklet — pages now read in order.',
+      ],
+      notes: 'The classic punk-zine fold. One sheet, no glue, no staples.',
+      svg: svgMini8,
+    },
+    {
+      id: 'accordion', name: 'Accordion Fold', pages: 'Variable · 1 sheet',
+      difficulty: 'easy',
+      uses: ['Photo strips', 'Standing displays', 'Long visual sequences'],
+      howTo: [
+        'Print on a long sheet (legal or tabloid recommended).',
+        'Fold back and forth in alternating directions, like a fan.',
+        'Optional: glue end panels to make a hardcover.',
+      ],
+      notes: 'Mountain and valley folds alternate. Works in any direction; long thin sheets are best.',
+      svg: svgAccordion,
+    },
+    {
+      id: 'gate', name: 'Gate Fold', pages: '6 pages · 1 sheet',
+      difficulty: 'easy',
+      uses: ['Wedding invitations', 'Reveals', 'Brochures'],
+      howTo: [
+        'Print double-sided on a single sheet.',
+        'Fold left and right outer panels inward to meet at the center.',
+        'Inner spread is revealed when both flaps open.',
+      ],
+      notes: 'Two outer panels open like gates to reveal the inner spread.',
+      svg: svgGate,
+    },
+    {
+      id: 'french', name: 'French Fold', pages: '8 pages · 1 sheet',
+      difficulty: 'medium',
+      uses: ['Art books', 'Maps', 'Wedding programs'],
+      howTo: [
+        'Print double-sided.',
+        'Fold sheet in half lengthwise.',
+        'Fold in half again across the short axis.',
+        'No cuts needed — pages are already in reading order.',
+      ],
+      notes: 'A sheet folded in quarters. The folded edges become the bound edge if you bind multiple together.',
+      svg: svgFrench,
+    },
+    {
+      id: 'double-gate', name: 'Double Gate Fold', pages: '8 pages · 1 sheet',
+      difficulty: 'hard',
+      uses: ['Premium brochures', 'Art prints', 'Dramatic reveals'],
+      howTo: [
+        'Print double-sided on a wide sheet.',
+        'Fold the two outer panels inward to meet at the center.',
+        'Fold the resulting closed sheet in half again down the center.',
+      ],
+      notes: 'A gate fold folded once more. Creates two layers of reveal.',
+      svg: svgDoubleGate,
+    },
+    { section: 'Multi-Sheet Bindings' },
+    {
+      id: 'saddle', name: 'Saddle-Stitched', pages: 'Multiple of 4 pages',
+      difficulty: 'medium',
+      uses: ['Comic books', 'Magazines', 'Standard zines'],
+      howTo: [
+        'Print sheets double-sided with imposition (pages reordered for folding).',
+        'Stack all sheets in order — sheet 1 on the outside.',
+        'Fold the entire stack in half together.',
+        'Staple along the spine (the fold).',
+      ],
+      notes: 'The most common multi-sheet binding. Page imposition is critical: the app handles it for you.',
+      svg: svgSaddle,
+    },
+    {
+      id: 'perfect', name: 'Perfect Bound', pages: 'Multiple of 4 pages',
+      difficulty: 'medium',
+      uses: ['Thicker zines', 'Lookbooks', 'Photo books'],
+      howTo: [
+        'Print each sheet double-sided with sequential pages.',
+        'Fold each sheet individually in half.',
+        'Stack folded sheets in page order.',
+        'Glue the spine edge with bookbinding adhesive (PVA works well).',
+        'Optional: wrap with a cover sheet glued to the spine.',
+      ],
+      notes: 'Like a paperback book. Each sheet is its own folded signature, glued at the spine.',
+      svg: svgPerfect,
+    },
+    {
+      id: 'signature', name: 'Signature Booklet', pages: 'Multiple of signature size',
+      difficulty: 'hard',
+      uses: ['Hardcover books', 'Art journals', 'High page counts'],
+      howTo: [
+        'Group sheets into "signatures" (mini saddle-stitched booklets, usually 8 or 16 pages each).',
+        'Fold and stitch each signature on its own.',
+        'Stack signatures in reading order.',
+        'Sew or glue the spines of all signatures together to bind.',
+      ],
+      notes: 'Used for thicker books where one giant saddle stitch would be impractical. Allows hand-bound book construction.',
+      svg: svgSignature,
+    },
+    {
+      id: 'french-book', name: 'French-Fold Book', pages: 'Multiple of 8 pages',
+      difficulty: 'hard',
+      uses: ['Art books', 'Translucent paper', 'Special editions'],
+      howTo: [
+        'Print each sheet double-sided.',
+        'French-fold each sheet (in half, then in half again).',
+        'Stack folded sheets with the folded edges all on the spine side.',
+        'Bind along the spine — the open edges form the outer book edge.',
+        'Optional: trim the outer edges flush.',
+      ],
+      notes: 'Each French-folded sheet becomes a 4-page section. Show-through is hidden because each "page" is actually two sheets thick.',
+      svg: svgFrenchBook,
+    },
+  ];
+
+  // ============================================================
+  // SVG STEP DIAGRAMS
+  // Each fold function returns a series of step panels showing
+  // how to assemble the zine. Builds an HTML "step strip".
+  // ============================================================
+
+  // tiny svg wrapper for a single step (square viewBox 60x60)
+  function step(svgContent) {
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60">
+      <style>
+        .p { fill: #fbf8f3; stroke: #1a1614; stroke-width: 1; }
+        .p2 { fill: #f0e9dc; stroke: #1a1614; stroke-width: 1; }
+        .p3 { fill: #e6dcc6; stroke: #1a1614; stroke-width: 1; }
+        .fold { stroke: #1a1614; fill: none; stroke-dasharray: 2 1.5; stroke-width: 0.6; }
+        .valley { stroke: #2d5d3f; fill: none; stroke-dasharray: 1 1.5; stroke-width: 0.6; }
+        .cut { stroke: #d63f2a; stroke-width: 1.2; fill: none; }
+        .gd { stroke: #1a1614; stroke-width: 0.6; fill: none; }
+        .ar { stroke: #d63f2a; stroke-width: 1; fill: #d63f2a; }
+        .spine { fill: #1a1614; }
+        .stitch { fill: #1a1614; }
+        .glue { fill: #d63f2a; opacity: 0.4; }
+      </style>
+      ${svgContent}
+    </svg>`;
+  }
+
+  // Build a horizontal strip from an array of {svg, label, num}
+  function stripBuilder(steps) {
+    const items = steps.map((s, i) => {
+      const arrow = i < steps.length - 1 ? `<div class="step-arrow">→</div>` : '';
+      return `
+        <div class="step">
+          <div class="step-svg">${s.svg}</div>
+          <div class="step-label"><span class="num">${i + 1}</span>${s.label}</div>
+        </div>${arrow}
+      `;
+    }).join('');
+    return `<div class="step-strip">${items}</div>`;
+  }
+
+  // ===== Single-Sheet Folds =====
+
+  function svgSingle() {
+    return stripBuilder([
+      {
+        label: 'Print<br/>both sides',
+        svg: step(`
+          <rect class="p" x="10" y="8" width="40" height="44"/>
+          <line class="fold" x1="30" y1="8" x2="30" y2="52"/>
+          <text x="30" y="32" font-family="Fraunces" font-style="italic" font-size="9" text-anchor="middle" fill="#1a1614">flat</text>
+        `),
+      },
+      {
+        label: 'Fold in<br/>half',
+        svg: step(`
+          <path class="p" d="M 10 8 L 30 8 L 30 52 L 10 52 Z"/>
+          <path class="p2" d="M 30 8 L 50 12 L 50 48 L 30 52 Z"/>
+          <line class="gd" x1="30" y1="8" x2="30" y2="52"/>
+          <path class="ar" d="M 38 6 Q 35 14 32 18" fill="none"/>
+          <polygon class="ar" points="32,18 30,15 35,15"/>
+        `),
+      },
+      {
+        label: 'Booklet<br/>complete',
+        svg: step(`
+          <rect class="p" x="18" y="10" width="24" height="40"/>
+          <rect x="18" y="10" width="2" height="40" class="spine"/>
+        `),
+      },
+    ]);
+  }
+
+  function svgMini8() {
+    return stripBuilder([
+      {
+        label: 'Print<br/>one side',
+        svg: step(`
+          <rect class="p" x="6" y="14" width="48" height="32"/>
+          <line class="fold" x1="18" y1="14" x2="18" y2="46"/>
+          <line class="fold" x1="30" y1="14" x2="30" y2="46"/>
+          <line class="fold" x1="42" y1="14" x2="42" y2="46"/>
+          <line class="fold" x1="6" y1="30" x2="54" y2="30"/>
+        `),
+      },
+      {
+        label: 'Cut center<br/>slit',
+        svg: step(`
+          <rect class="p" x="6" y="14" width="48" height="32"/>
+          <line class="fold" x1="18" y1="14" x2="18" y2="46"/>
+          <line class="fold" x1="30" y1="14" x2="30" y2="46"/>
+          <line class="fold" x1="42" y1="14" x2="42" y2="46"/>
+          <line class="cut" x1="18" y1="30" x2="42" y2="30"/>
+          <text x="30" y="55" font-family="JetBrains Mono" font-size="5" text-anchor="middle" fill="#d63f2a">cut</text>
+        `),
+      },
+      {
+        label: 'Fold long<br/>edge',
+        svg: step(`
+          <rect class="p" x="6" y="22" width="48" height="16"/>
+          <line class="fold" x1="18" y1="22" x2="18" y2="38"/>
+          <line class="fold" x1="30" y1="22" x2="30" y2="38"/>
+          <line class="fold" x1="42" y1="22" x2="42" y2="38"/>
+          <line class="cut" x1="18" y1="22" x2="42" y2="22"/>
+        `),
+      },
+      {
+        label: 'Push ends<br/>together',
+        svg: step(`
+          <path class="p" d="M 8 30 L 22 18 L 38 18 L 52 30 L 38 42 L 22 42 Z"/>
+          <line class="gd" x1="22" y1="18" x2="22" y2="42"/>
+          <line class="gd" x1="38" y1="18" x2="38" y2="42"/>
+          <line class="gd" x1="30" y1="14" x2="30" y2="46"/>
+          <path class="ar" d="M 4 30 L 12 30" fill="none"/>
+          <polygon class="ar" points="12,30 9,28 9,32"/>
+          <path class="ar" d="M 56 30 L 48 30" fill="none"/>
+          <polygon class="ar" points="48,30 51,28 51,32"/>
+        `),
+      },
+      {
+        label: 'Flatten<br/>booklet',
+        svg: step(`
+          <rect class="p" x="20" y="10" width="20" height="40"/>
+          <rect x="20" y="10" width="1.5" height="40" class="spine"/>
+        `),
+      },
+    ]);
+  }
+
+  function svgAccordion() {
+    return stripBuilder([
+      {
+        label: 'Long flat<br/>sheet',
+        svg: step(`
+          <rect class="p" x="4" y="22" width="52" height="16"/>
+          <line class="fold" x1="14" y1="22" x2="14" y2="38"/>
+          <line class="fold" x1="22" y1="22" x2="22" y2="38"/>
+          <line class="fold" x1="30" y1="22" x2="30" y2="38"/>
+          <line class="fold" x1="38" y1="22" x2="38" y2="38"/>
+          <line class="fold" x1="46" y1="22" x2="46" y2="38"/>
+        `),
+      },
+      {
+        label: 'Fold first<br/>panel',
+        svg: step(`
+          <path class="p" d="M 14 22 L 56 22 L 56 38 L 14 38 Z"/>
+          <path class="p2" d="M 14 22 L 4 26 L 4 34 L 14 38 Z"/>
+          <line class="gd" x1="14" y1="22" x2="14" y2="38"/>
+          <line class="fold" x1="22" y1="22" x2="22" y2="38"/>
+          <line class="fold" x1="30" y1="22" x2="30" y2="38"/>
+        `),
+      },
+      {
+        label: 'Alternate<br/>directions',
+        svg: step(`
+          <path class="p" d="M 12 18 L 16 18 L 16 42 L 12 42 Z"/>
+          <path class="p2" d="M 16 18 L 20 18 L 20 42 L 16 42 Z"/>
+          <path class="p" d="M 20 18 L 24 18 L 24 42 L 20 42 Z"/>
+          <path class="p2" d="M 24 18 L 28 18 L 28 42 L 24 42 Z"/>
+          <path class="p" d="M 28 18 L 32 18 L 32 42 L 28 42 Z"/>
+          <path class="p2" d="M 32 18 L 36 18 L 36 42 L 32 42 Z"/>
+          <path class="p" d="M 36 18 L 40 18 L 40 42 L 36 42 Z"/>
+          <path class="p2" d="M 40 18 L 44 18 L 44 42 L 40 42 Z"/>
+        `),
+      },
+      {
+        label: 'Fan it<br/>out',
+        svg: step(`
+          <path class="p" d="M 8 14 L 22 14 L 22 46 L 8 46 Z"/>
+          <path class="p2" d="M 22 14 L 32 18 L 32 42 L 22 46 Z"/>
+          <path class="p" d="M 32 18 L 42 14 L 42 46 L 32 42 Z"/>
+          <path class="p2" d="M 42 14 L 52 22 L 52 38 L 42 46 Z"/>
+        `),
+      },
+    ]);
+  }
+
+  function svgGate() {
+    return stripBuilder([
+      {
+        label: 'Three<br/>panels',
+        svg: step(`
+          <rect class="p" x="6" y="14" width="48" height="32"/>
+          <line class="valley" x1="22" y1="14" x2="22" y2="46"/>
+          <line class="valley" x1="38" y1="14" x2="38" y2="46"/>
+        `),
+      },
+      {
+        label: 'Right flap<br/>folds in',
+        svg: step(`
+          <rect class="p" x="6" y="14" width="32" height="32"/>
+          <path class="p2" d="M 38 14 L 38 46 L 22 42 L 22 18 Z"/>
+          <line class="valley" x1="22" y1="14" x2="22" y2="46"/>
+          <path class="ar" d="M 50 18 Q 42 18 30 22" fill="none"/>
+          <polygon class="ar" points="30,22 35,20 33,24"/>
+        `),
+      },
+      {
+        label: 'Left flap<br/>folds in',
+        svg: step(`
+          <rect class="p" x="22" y="14" width="16" height="32"/>
+          <path class="p2" d="M 6 14 L 6 46 L 22 42 L 22 18 Z" transform="translate(16 0) scale(-1 1)" transform-origin="22 30"/>
+          <path class="p2" d="M 38 14 L 38 46 L 22 42 L 22 18 Z" transform="scale(-1 1) translate(-44 0)"/>
+        `),
+      },
+      {
+        label: 'Both flaps<br/>meet',
+        svg: step(`
+          <rect class="p" x="14" y="14" width="32" height="32"/>
+          <line class="gd" x1="30" y1="14" x2="30" y2="46"/>
+        `),
+      },
+    ]);
+  }
+
+  function svgFrench() {
+    return stripBuilder([
+      {
+        label: 'Print<br/>both sides',
+        svg: step(`
+          <rect class="p" x="8" y="10" width="44" height="40"/>
+          <line class="fold" x1="30" y1="10" x2="30" y2="50"/>
+          <line class="fold" x1="8" y1="30" x2="52" y2="30"/>
+        `),
+      },
+      {
+        label: 'Fold in half<br/>lengthwise',
+        svg: step(`
+          <rect class="p" x="8" y="20" width="44" height="20"/>
+          <line class="fold" x1="30" y1="20" x2="30" y2="40"/>
+          <path class="ar" d="M 22 8 Q 24 14 26 18" fill="none"/>
+          <polygon class="ar" points="26,18 24,15 28,15"/>
+        `),
+      },
+      {
+        label: 'Fold across<br/>short axis',
+        svg: step(`
+          <rect class="p" x="18" y="20" width="22" height="20"/>
+          <path class="ar" d="M 50 24 Q 44 26 42 28" fill="none"/>
+          <polygon class="ar" points="42,28 44,25 47,28"/>
+        `),
+      },
+      {
+        label: '8-page<br/>booklet',
+        svg: step(`
+          <rect class="p" x="20" y="14" width="20" height="32"/>
+          <rect x="20" y="14" width="1.5" height="32" class="spine"/>
+        `),
+      },
+    ]);
+  }
+
+  function svgDoubleGate() {
+    return stripBuilder([
+      {
+        label: 'Four<br/>panels',
+        svg: step(`
+          <rect class="p" x="4" y="16" width="52" height="28"/>
+          <line class="valley" x1="17" y1="16" x2="17" y2="44"/>
+          <line class="fold" x1="30" y1="16" x2="30" y2="44"/>
+          <line class="valley" x1="43" y1="16" x2="43" y2="44"/>
+        `),
+      },
+      {
+        label: 'Outer flaps<br/>fold in',
+        svg: step(`
+          <rect class="p" x="17" y="16" width="26" height="28"/>
+          <path class="p2" d="M 17 16 L 30 18 L 30 42 L 17 44 Z"/>
+          <path class="p2" d="M 43 16 L 30 18 L 30 42 L 43 44 Z"/>
+          <line class="fold" x1="30" y1="16" x2="30" y2="44"/>
+        `),
+      },
+      {
+        label: 'Fold result<br/>in half',
+        svg: step(`
+          <rect class="p" x="22" y="16" width="16" height="28"/>
+          <line class="gd" x1="30" y1="16" x2="30" y2="44"/>
+          <path class="ar" d="M 14 14 Q 18 18 22 20" fill="none"/>
+          <polygon class="ar" points="22,20 18,18 21,16"/>
+        `),
+      },
+      {
+        label: 'Final<br/>booklet',
+        svg: step(`
+          <rect class="p" x="22" y="14" width="16" height="32"/>
+          <rect x="22" y="14" width="1.5" height="32" class="spine"/>
+        `),
+      },
+    ]);
+  }
+
+  // ===== Multi-Sheet Bindings =====
+
+  function svgSaddle() {
+    return stripBuilder([
+      {
+        label: 'Print<br/>imposed',
+        svg: step(`
+          <rect class="p" x="8" y="14" width="44" height="32"/>
+          <line class="fold" x1="30" y1="14" x2="30" y2="46"/>
+          <text x="20" y="32" font-family="Fraunces" font-style="italic" font-size="6" text-anchor="middle" fill="#1a1614">8</text>
+          <text x="40" y="32" font-family="Fraunces" font-style="italic" font-size="6" text-anchor="middle" fill="#1a1614">1</text>
+        `),
+      },
+      {
+        label: 'Stack all<br/>sheets',
+        svg: step(`
+          <rect class="p3" x="6" y="12" width="44" height="32"/>
+          <rect class="p2" x="9" y="15" width="44" height="32"/>
+          <rect class="p" x="12" y="18" width="44" height="32"/>
+          <line class="fold" x1="34" y1="18" x2="34" y2="50"/>
+        `),
+      },
+      {
+        label: 'Fold all<br/>together',
+        svg: step(`
+          <path class="p" d="M 12 14 L 32 14 L 32 46 L 12 46 Z"/>
+          <path class="p2" d="M 32 14 L 50 18 L 50 42 L 32 46 Z"/>
+          <line class="gd" x1="32" y1="14" x2="32" y2="46"/>
+        `),
+      },
+      {
+        label: 'Staple<br/>spine',
+        svg: step(`
+          <rect class="p" x="14" y="10" width="32" height="40"/>
+          <rect x="14" y="10" width="2" height="40" class="spine"/>
+          <circle class="stitch" cx="15" cy="20" r="1.2"/>
+          <circle class="stitch" cx="15" cy="30" r="1.2"/>
+          <circle class="stitch" cx="15" cy="40" r="1.2"/>
+        `),
+      },
+    ]);
+  }
+
+  function svgPerfect() {
+    return stripBuilder([
+      {
+        label: 'Sheets in<br/>order',
+        svg: step(`
+          <rect class="p" x="6" y="12" width="14" height="36"/>
+          <rect class="p2" x="22" y="12" width="14" height="36"/>
+          <rect class="p" x="38" y="12" width="14" height="36"/>
+          <text x="13" y="32" font-family="Fraunces" font-style="italic" font-size="6" text-anchor="middle" fill="#1a1614">1-4</text>
+          <text x="29" y="32" font-family="Fraunces" font-style="italic" font-size="6" text-anchor="middle" fill="#1a1614">5-8</text>
+          <text x="45" y="32" font-family="Fraunces" font-style="italic" font-size="6" text-anchor="middle" fill="#1a1614">9-12</text>
+        `),
+      },
+      {
+        label: 'Fold each<br/>in half',
+        svg: step(`
+          <path class="p" d="M 10 12 L 18 12 L 18 48 L 10 48 Z"/>
+          <path class="p2" d="M 18 12 L 26 14 L 26 46 L 18 48 Z"/>
+          <path class="p" d="M 28 12 L 36 12 L 36 48 L 28 48 Z"/>
+          <path class="p2" d="M 36 12 L 44 14 L 44 46 L 36 48 Z"/>
+        `),
+      },
+      {
+        label: 'Stack<br/>sheets',
+        svg: step(`
+          <rect class="p3" x="14" y="10" width="34" height="40"/>
+          <rect class="p2" x="14" y="10" width="34" height="40" opacity="0.5"/>
+          <rect class="p" x="14" y="10" width="34" height="40" fill="none" stroke="#1a1614"/>
+          <line class="gd" x1="14" y1="10" x2="14" y2="50"/>
+          <line class="gd" x1="14" y1="20" x2="48" y2="20"/>
+          <line class="gd" x1="14" y1="30" x2="48" y2="30"/>
+          <line class="gd" x1="14" y1="40" x2="48" y2="40"/>
+        `),
+      },
+      {
+        label: 'Glue<br/>spine',
+        svg: step(`
+          <rect class="p" x="14" y="10" width="34" height="40"/>
+          <rect class="glue" x="14" y="10" width="3" height="40"/>
+          <rect x="14" y="10" width="2" height="40" class="spine"/>
+        `),
+      },
+    ]);
+  }
+
+  function svgSignature() {
+    return stripBuilder([
+      {
+        label: 'Group into<br/>signatures',
+        svg: step(`
+          <rect class="p" x="6" y="14" width="14" height="32"/>
+          <rect class="p" x="9" y="17" width="14" height="32"/>
+          <rect class="p" x="26" y="14" width="14" height="32"/>
+          <rect class="p" x="29" y="17" width="14" height="32"/>
+          <rect class="p" x="46" y="14" width="14" height="32" transform="translate(-4 0)"/>
+          <text x="13" y="55" font-family="JetBrains Mono" font-size="5" text-anchor="middle" fill="#6b6359">sig 1</text>
+          <text x="33" y="55" font-family="JetBrains Mono" font-size="5" text-anchor="middle" fill="#6b6359">sig 2</text>
+          <text x="49" y="55" font-family="JetBrains Mono" font-size="5" text-anchor="middle" fill="#6b6359">sig 3</text>
+        `),
+      },
+      {
+        label: 'Stitch each<br/>signature',
+        svg: step(`
+          <path class="p" d="M 10 14 L 22 14 L 22 46 L 10 46 Z"/>
+          <line class="gd" x1="22" y1="14" x2="22" y2="46"/>
+          <circle class="stitch" cx="22" cy="22" r="1"/>
+          <circle class="stitch" cx="22" cy="30" r="1"/>
+          <circle class="stitch" cx="22" cy="38" r="1"/>
+          <path class="p" d="M 30 14 L 42 14 L 42 46 L 30 46 Z"/>
+          <line class="gd" x1="42" y1="14" x2="42" y2="46"/>
+          <circle class="stitch" cx="42" cy="22" r="1"/>
+          <circle class="stitch" cx="42" cy="30" r="1"/>
+          <circle class="stitch" cx="42" cy="38" r="1"/>
+        `),
+      },
+      {
+        label: 'Stack<br/>signatures',
+        svg: step(`
+          <rect class="p3" x="10" y="10" width="36" height="40"/>
+          <line class="gd" x1="10" y1="20" x2="46" y2="20"/>
+          <line class="gd" x1="10" y1="30" x2="46" y2="30"/>
+          <line class="gd" x1="10" y1="40" x2="46" y2="40"/>
+          <circle class="stitch" cx="10" cy="15" r="1"/>
+          <circle class="stitch" cx="10" cy="25" r="1"/>
+          <circle class="stitch" cx="10" cy="35" r="1"/>
+          <circle class="stitch" cx="10" cy="45" r="1"/>
+        `),
+      },
+      {
+        label: 'Bind all<br/>spines',
+        svg: step(`
+          <rect class="p" x="14" y="10" width="34" height="40"/>
+          <rect x="14" y="10" width="2" height="40" class="spine"/>
+          <line class="gd" x1="16" y1="14" x2="48" y2="14" stroke="#d63f2a" stroke-width="0.6"/>
+          <line class="gd" x1="16" y1="46" x2="48" y2="46" stroke="#d63f2a" stroke-width="0.6"/>
+        `),
+      },
+    ]);
+  }
+
+  function svgFrenchBook() {
+    return stripBuilder([
+      {
+        label: 'Sheets<br/>printed',
+        svg: step(`
+          <rect class="p" x="8" y="12" width="20" height="36"/>
+          <line class="fold" x1="18" y1="12" x2="18" y2="48"/>
+          <line class="fold" x1="8" y1="30" x2="28" y2="30"/>
+          <rect class="p" x="34" y="12" width="20" height="36"/>
+          <line class="fold" x1="44" y1="12" x2="44" y2="48"/>
+          <line class="fold" x1="34" y1="30" x2="54" y2="30"/>
+        `),
+      },
+      {
+        label: 'French-fold<br/>each',
+        svg: step(`
+          <rect class="p" x="14" y="18" width="10" height="24"/>
+          <line class="gd" x1="14" y1="18" x2="14" y2="42"/>
+          <line class="gd" x1="14" y1="30" x2="24" y2="30"/>
+          <rect class="p" x="34" y="18" width="10" height="24"/>
+          <line class="gd" x1="34" y1="18" x2="34" y2="42"/>
+          <line class="gd" x1="34" y1="30" x2="44" y2="30"/>
+        `),
+      },
+      {
+        label: 'Stack with<br/>folds at spine',
+        svg: step(`
+          <rect class="p" x="20" y="12" width="20" height="36"/>
+          <line class="gd" x1="22" y1="14" x2="22" y2="46"/>
+          <line class="gd" x1="24" y1="14" x2="24" y2="46"/>
+          <line class="gd" x1="26" y1="14" x2="26" y2="46"/>
+          <text x="34" y="55" font-family="JetBrains Mono" font-size="4.5" text-anchor="middle" fill="#6b6359">folds in</text>
+        `),
+      },
+      {
+        label: 'Bind &amp; trim<br/>outer edge',
+        svg: step(`
+          <rect class="p" x="18" y="10" width="24" height="40"/>
+          <rect x="18" y="10" width="2" height="40" class="spine"/>
+          <line class="cut" x1="42" y1="10" x2="42" y2="50" stroke-dasharray="2 1.5"/>
+        `),
+      },
+    ]);
+  }
+
+  // ============================================================
+  // RENDER WIKI (only renders once on first tab open)
+  // ============================================================
+  function renderWiki() {
+    const grid = document.getElementById('wiki-grid');
+    if (grid.dataset.rendered) return;
+    grid.dataset.rendered = 'true';
+
+    grid.innerHTML = WIKI.map(entry => {
+      if (entry.section) {
+        return `<div class="wiki-section-title">${entry.section}</div>`;
+      }
+      const diffClass = `diff-${entry.difficulty === 'easy' ? 'easy' : entry.difficulty === 'medium' ? 'med' : 'hard'}`;
+      const diffLabel = entry.difficulty.charAt(0).toUpperCase() + entry.difficulty.slice(1);
+      const useTags = entry.uses.map(u => `<span class="wiki-tag use">${u}</span>`).join('');
+      const stepList = entry.howTo.map(s => `<li>${s}</li>`).join('');
+      return `
+        <article class="wiki-card">
+          <div class="wiki-card-header">
+            <span class="name">${entry.name}</span>
+            <span class="meta">${entry.pages}</span>
+          </div>
+          <div class="wiki-diagram">${entry.svg()}</div>
+          <div class="wiki-body">
+            <div class="wiki-section">
+              <h4>About</h4>
+              ${entry.notes}
+            </div>
+            <div class="wiki-section">
+              <h4>How to Fold</h4>
+              <ol>${stepList}</ol>
+            </div>
+            <div class="wiki-tags">
+              <span class="wiki-tag ${diffClass}">${diffLabel}</span>
+              ${useTags}
+            </div>
+          </div>
+        </article>
+      `;
+    }).join('');
+  }
+
+  render();
+  window.addEventListener('resize', render);
+</script>
+</body>
+</html>
