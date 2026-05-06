@@ -71,26 +71,53 @@ function drawSheet(ctx, cw, ch, paperW, paperH, sheet, side) {
       ctx.fillStyle = '#fbf8f3';
       ctx.fillRect(x + 1, y + 1, w - 2, h - 2);
 
-      // Safe-area margin guide. Each edge gets the trim margin if it
-      // lies on the sheet boundary, otherwise the smaller fold margin.
-      // Skipped entirely when the user toggles to borderless mode.
-      if (state.showMargins) {
+      // Safe-area margin guide. Each cell has 4 edges; an edge is
+      // "outer" if it sits on the sheet boundary, otherwise "inner".
+      // Outer edges are gated by state.showSheetBorder, inner edges by
+      // state.showInnerMargins. Outer edges use the larger trim inset,
+      // inner edges use the smaller fold inset. When a perpendicular
+      // edge is hidden, the line extends to the cell boundary so it
+      // joins cleanly with the adjacent cell's matching line.
+      {
         const eps = 1e-3;
-        const mL = (cell.x < eps)                              ? SAFE_MARGIN_TRIM_IN : SAFE_MARGIN_FOLD_IN;
-        const mT = (cell.y < eps)                              ? SAFE_MARGIN_TRIM_IN : SAFE_MARGIN_FOLD_IN;
-        const mR = (Math.abs(cell.x + cell.w - paperW) < eps)  ? SAFE_MARGIN_TRIM_IN : SAFE_MARGIN_FOLD_IN;
-        const mB = (Math.abs(cell.y + cell.h - paperH) < eps)  ? SAFE_MARGIN_TRIM_IN : SAFE_MARGIN_FOLD_IN;
-        ctx.save();
-        ctx.strokeStyle = 'rgba(45, 93, 63, 0.55)';
-        ctx.lineWidth = 1;
-        ctx.setLineDash([3, 3]);
-        ctx.strokeRect(
-          x + mL * sx,
-          y + mT * sy,
-          w - (mL + mR) * sx,
-          h - (mT + mB) * sy
-        );
-        ctx.restore();
+        const isLeftOuter   = cell.x < eps;
+        const isTopOuter    = cell.y < eps;
+        const isRightOuter  = Math.abs(cell.x + cell.w - paperW) < eps;
+        const isBottomOuter = Math.abs(cell.y + cell.h - paperH) < eps;
+
+        const visL = isLeftOuter   ? state.showSheetBorder : state.showInnerMargins;
+        const visT = isTopOuter    ? state.showSheetBorder : state.showInnerMargins;
+        const visR = isRightOuter  ? state.showSheetBorder : state.showInnerMargins;
+        const visB = isBottomOuter ? state.showSheetBorder : state.showInnerMargins;
+
+        if (visL || visT || visR || visB) {
+          const mL = isLeftOuter   ? SAFE_MARGIN_TRIM_IN : SAFE_MARGIN_FOLD_IN;
+          const mT = isTopOuter    ? SAFE_MARGIN_TRIM_IN : SAFE_MARGIN_FOLD_IN;
+          const mR = isRightOuter  ? SAFE_MARGIN_TRIM_IN : SAFE_MARGIN_FOLD_IN;
+          const mB = isBottomOuter ? SAFE_MARGIN_TRIM_IN : SAFE_MARGIN_FOLD_IN;
+
+          const xL = x + mL * sx;
+          const xR = x + w - mR * sx;
+          const yT = y + mT * sy;
+          const yB = y + h - mB * sy;
+
+          const yTopEnd   = visT ? yT : y;
+          const yBotEnd   = visB ? yB : y + h;
+          const xLeftEnd  = visL ? xL : x;
+          const xRightEnd = visR ? xR : x + w;
+
+          ctx.save();
+          ctx.strokeStyle = 'rgba(45, 93, 63, 0.55)';
+          ctx.lineWidth = 1;
+          ctx.setLineDash([3, 3]);
+          ctx.beginPath();
+          if (visL) { ctx.moveTo(xL, yTopEnd);  ctx.lineTo(xL, yBotEnd); }
+          if (visR) { ctx.moveTo(xR, yTopEnd);  ctx.lineTo(xR, yBotEnd); }
+          if (visT) { ctx.moveTo(xLeftEnd, yT); ctx.lineTo(xRightEnd, yT); }
+          if (visB) { ctx.moveTo(xLeftEnd, yB); ctx.lineTo(xRightEnd, yB); }
+          ctx.stroke();
+          ctx.restore();
+        }
       }
 
       ctx.save();
