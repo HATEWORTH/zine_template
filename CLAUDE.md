@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project shape
 
-A **zero-build static web app** — plain HTML, CSS, and JavaScript split across files but loaded via simple `<script src=...>` tags (no modules, no bundler). External dependencies are limited to two Google Fonts (Fraunces, JetBrains Mono).
+A **zero-build static web app** — plain HTML, CSS, and JavaScript split across files but loaded via simple `<script src=...>` tags (no modules, no bundler). External dependencies are limited to two Google Fonts (Fraunces, JetBrains Mono) and JSZip (CDN, used by `js/export.js` to bundle multi-PNG exports into a single `.zip` download).
 
 To run: open `index.html` directly in a browser. There is no dev server, no lint command, no test runner.
 
@@ -44,7 +44,7 @@ The flow is **state → layout → draw**, plus a separate wiki tab.
 
 - **`drawSheet(ctx, cw, ch, paperW, paperH, sheet, side)`** (`js/draw.js`) is the single rendering primitive. It is reused for both the on-screen preview and the 300-DPI PNG export — anything you change here affects both. `side` is `'front'` or `'back'`; cells are scaled from paper inches to canvas pixels via `sx = cw/paperW`, `sy = ch/paperH`.
 
-- **`exportPNG()`** (`js/export.js`) iterates `layout.sheets`, creates an offscreen canvas at `w*300 × h*300` per side, calls `drawSheet`, and triggers a blob download. File naming pattern: `zine_<fold-or-binding>_<size>_<orientation>[_sheetN]_<front|back>.png`.
+- **`exportPNG()`** (`js/export.js`) iterates `layout.sheets`, creates an offscreen canvas at `w*300 × h*300` per side, calls `drawSheet`, and produces a blob per file. If only one PNG would be produced it downloads that PNG directly; otherwise it bundles them into `<baseName>.zip` (via JSZip) so the browser fires only one download prompt. Inside the zip the files live in a `<baseName>/` folder as `sheet<N>_front.png` / `sheet<N>_back.png`.
 
 - **`render()`** (`js/render.js`) — single dispatcher. Reads `state.tab`, either draws the current sheet to the main canvas (template tab) or builds the multi-sheet viewer DOM (viewer tab). Always calls `updateMeta()` and `updateLabels()` afterward. The main `canvas`/`ctx` references are looked up at the top of this file.
 

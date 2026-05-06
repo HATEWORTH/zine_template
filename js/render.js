@@ -67,8 +67,9 @@ function updateLabels() {
   // export note
   const layout = getLayout();
   const totalFiles = layout.sheets.reduce((sum, s) => sum + (s.back ? 2 : 1), 0);
+  const bundle = totalFiles > 1 ? ' (zip)' : '';
   document.getElementById('export-note').textContent =
-    `Exports ${totalFiles} file${totalFiles > 1 ? 's' : ''} · 300 DPI`;
+    `Exports ${totalFiles} file${totalFiles > 1 ? 's' : ''}${bundle} · 300 DPI`;
 }
 
 function updateMeta(layout) {
